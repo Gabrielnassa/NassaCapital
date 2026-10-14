@@ -632,29 +632,20 @@ function renderMetas() {
       <div class="small muted" style="margin-top:10px">${data.goals.updatedAt ? 'Saldos atualizados em ' + fmtDateTime(data.goals.updatedAt) : 'Saldos ainda não informados.'}</div>
     </div>
 
-    ${fl.sobra > 0 ? `<div class="card">
-      <h2>Sobra do mês</h2>
-      <p class="small muted" style="margin-top:0">Lança de uma vez a divisão da sobra: ${fmtBRL(fl.toReserva)} na reserva e ${fmtBRL(fl.toLataria)} na lataria.</p>
-      <button class="btn primary block" data-action="sobra">Lançar sobra de ${fmtBRL(fl.sobra)}</button>
-    </div>` : ''}
-
-    ${movementForm('goal-form', null)}
+    ${movementForm('goal-form', 'lataria')}
 
     <details class="card">
-      <summary>Corrigir saldos</summary>
+      <summary>Corrigir saldo</summary>
       <form id="goals-form" novalidate style="margin-top:12px">
         <p class="small muted" style="margin-top:0">Use só se o saldo real estiver diferente. A diferença entra nos lançamentos como ajuste.</p>
-        <div class="row">
-          <div class="field"><label for="g-reserva">Reserva (R$)</label><input type="text" inputmode="decimal" id="g-reserva" value="${inputVal(data.goals.reserva)}" placeholder="0,00"></div>
-          <div class="field"><label for="g-lataria">Lataria (R$)</label><input type="text" inputmode="decimal" id="g-lataria" value="${inputVal(data.goals.lataria)}" placeholder="0,00"></div>
-        </div>
-        <button type="submit" class="btn block">Salvar saldos</button>
+        <div class="field"><label for="g-lataria">Saldo real da lataria (R$)</label><input type="text" inputmode="decimal" id="g-lataria" value="${inputVal(data.goals.lataria)}" placeholder="0,00"></div>
+        <button type="submit" class="btn block">Salvar saldo</button>
       </form>
     </details>
 
     <div class="card">
       <h2>Lançamentos</h2>
-      ${movementList(data.goalLog, true)}
+      ${movementList(data.goalLog.filter(m => m.goal === 'lataria'), false)}
     </div>
 
     <div class="card">
@@ -674,14 +665,13 @@ function renderMetas() {
 
 function submitGoals(ev) {
   ev.preventDefault();
-  const r = parseNum($('#g-reserva').value || '0');
   const l = parseNum($('#g-lataria').value || '0');
-  if (!(r >= 0) || !(l >= 0)) { toast('Valores inválidos.', true); return; }
-  logAdjust('reserva', round2(r));
+  if (!(l >= 0)) { $('#g-lataria').classList.add('invalid'); toast('Valor inválido.', true); return; }
   logAdjust('lataria', round2(l));
-  data.goals = { reserva: round2(r), lataria: round2(l), updatedAt: Date.now() };
+  data.goals.lataria = round2(l);
+  data.goals.updatedAt = Date.now();
   save();
-  toast('Saldos atualizados.');
+  toast('Saldo da lataria atualizado.');
   renderMetas();
 }
 
@@ -815,6 +805,12 @@ function renderReserva() {
       </div>
       ${c.gastos > 0 ? '' : '<p class="small muted" style="margin-bottom:0">Informe seus gastos mensais em Ajustes para ver quantos meses a reserva cobre.</p>'}
     </div>
+
+    ${fl.sobra > 0 ? `<div class="card">
+      <h2>Sobra do mês</h2>
+      <p class="small muted" style="margin-top:0">Lança de uma vez a divisão da sobra: ${fmtBRL(fl.toReserva)} na reserva e ${fmtBRL(fl.toLataria)} na lataria.</p>
+      <button class="btn primary block" data-action="sobra">Lançar sobra de ${fmtBRL(fl.sobra)}</button>
+    </div>` : ''}
 
     ${movementForm('reserve-form', 'reserva')}
 
