@@ -138,7 +138,7 @@ function defaults() {
     initial: Object.fromEntries(SYMS.map(s => [s, { qty: 0, cost: 0 }])),
     purchases: [],
     goals: { reserva: 0, lataria: 0, updatedAt: null },
-    reserveLog: [],
+    goalLog: [],
   };
 }
 
@@ -184,12 +184,16 @@ function normalize(raw) {
   const g = raw.goals || {};
   d.goals = { reserva: num(g.reserva, 0), lataria: num(g.lataria, 0), updatedAt: g.updatedAt || null };
 
-  if (Array.isArray(raw.reserveLog)) {
-    d.reserveLog = raw.reserveLog
-      .filter(m => m && parseISO(m.date) && ['dep', 'ret', 'ajuste'].includes(m.type))
-      .map(m => ({ id: String(m.id || uid()), date: m.date, type: m.type, amount: round2(num(m.amount, 0)), note: String(m.note || '').slice(0, 80) }))
-      .filter(m => m.amount !== 0);
-  }
+  // goalLog: lançamentos da reserva e da lataria. Aceita o antigo reserveLog.
+  const logSrc = Array.isArray(raw.goalLog) ? raw.goalLog : Array.isArray(raw.reserveLog) ? raw.reserveLog : [];
+  d.goalLog = logSrc
+    .filter(m => m && parseISO(m.date) && ['dep', 'ret', 'ajuste'].includes(m.type))
+    .map(m => ({
+      id: String(m.id || uid()), date: m.date,
+      goal: m.goal === 'lataria' ? 'lataria' : 'reserva',
+      type: m.type, amount: round2(num(m.amount, 0)), note: String(m.note || '').slice(0, 80),
+    }))
+    .filter(m => m.amount !== 0);
   return d;
 }
 
@@ -334,8 +338,9 @@ function monthlyFlow() {
   const aporteBRL = c.weeklyUSD * fx * 52 / 12;
   const sobra = c.renda - c.gastos - aporteBRL;
   const reservaDone = c.metaReserva > 0 ? data.goals.reserva >= c.metaReserva : true;
-  const toReserva = sobra > 0 && !reservaDone ? sobra * c.split / 100 : 0;
-  const toLataria = sobra > 0 ? sobra - toReserva : 0;
+  // Em centavos: a parte da lataria é o resto, para a soma bater com a sobra.
+  const toReserva = sobra > 0 && !reservaDone ? round2(sobra * c.split / 100) : 0;
+  const toLataria = sobra > 0 ? round2(round2(sobra) - toReserva) : 0;
   return { fx, aporteBRL, sobra, toReserva, toLataria, reservaDone };
 }
 
@@ -616,14 +621,30 @@ function renderMetas() {
       <div class="small muted" style="margin-top:10px">${data.goals.updatedAt ? 'Saldos atualizados em ' + fmtDateTime(data.goals.updatedAt) : 'Saldos ainda não informados.'}</div>
     </div>
 
-    <form class="card" id="goals-form" novalidate>
-      <h2>Atualizar saldos</h2>
-      <div class="row">
-        <div class="field"><label for="g-reserva">Reserva (R$)</label><input type="text" inputmode="decimal" id="g-reserva" value="${inputVal(data.goals.reserva)}" placeholder="0,00"></div>
-        <div class="field"><label for="g-lataria">Lataria (R$)</label><input type="text" inputmode="decimal" id="g-lataria" value="${inputVal(data.goals.lataria)}" placeholder="0,00"></div>
-      </div>
-      <button type="submit" class="btn primary block">Salvar saldos</button>
-    </form>
+    ${fl.sobra > 0 ? `<div class="card">
+      <h2>Sobra do mês</h2>
+      <p class="small muted" style="margin-top:0">Lança de uma vez a divisão da sobra: ${fmtBRL(fl.toReserva)} na reserva e ${fmtBRL(fl.toLataria)} na lataria.</p>
+      <button class="btn primary block" data-action="sobra">Lançar sobra de ${fmtBRL(fl.sobra)}</button>
+    </div>` : ''}
+
+    ${movementForm('goal-form', null)}
+
+    <details class="card">
+      <summary>Corrigir saldos</summary>
+      <form id="goals-form" novalidate style="margin-top:12px">
+        <p class="small muted" style="margin-top:0">Use só se o saldo real estiver diferente. A diferença entra nos lançamentos como ajuste.</p>
+        <div class="row">
+          <div class="field"><label for="g-reserva">Reserva (R$)</label><input type="text" inputmode="decimal" id="g-reserva" value="${inputVal(data.goals.reserva)}" placeholder="0,00"></div>
+          <div class="field"><label for="g-lataria">Lataria (R$)</label><input type="text" inputmode="decimal" id="g-lataria" value="${inputVal(data.goals.lataria)}" placeholder="0,00"></div>
+        </div>
+        <button type="submit" class="btn block">Salvar saldos</button>
+      </form>
+    </details>
+
+    <div class="card">
+      <h2>Lançamentos</h2>
+      ${movementList(data.goalLog, true)}
+    </div>
 
     <div class="card">
       <h2>Fluxo do mês</h2>
@@ -645,26 +666,115 @@ function submitGoals(ev) {
   const r = parseNum($('#g-reserva').value || '0');
   const l = parseNum($('#g-lataria').value || '0');
   if (!(r >= 0) || !(l >= 0)) { toast('Valores inválidos.', true); return; }
-  logReserveAdjust(round2(r));
+  logAdjust('reserva', round2(r));
+  logAdjust('lataria', round2(l));
   data.goals = { reserva: round2(r), lataria: round2(l), updatedAt: Date.now() };
   save();
   toast('Saldos atualizados.');
   renderMetas();
 }
 
-/* ---- Reserva ---- */
+/* ---- Lançamentos (reserva e lataria) ---- */
 
-const RESERVE_TYPES = { dep: 'Depósito', ret: 'Retirada', ajuste: 'Ajuste de saldo' };
+const MOVE_TYPES = { dep: 'Entrada', ret: 'Saída', ajuste: 'Ajuste de saldo' };
+const GOAL_NAMES = { reserva: 'Reserva', lataria: 'Lataria' };
+
+/** Soma (ou subtrai) um lançamento no saldo da meta e guarda no histórico. */
+function addMovement(goal, type, date, amount, note) {
+  amount = round2(amount);
+  if (!amount) return;
+  data.goalLog.push({ id: uid(), date, goal, type, amount, note: (note || '').slice(0, 80) });
+  data.goals[goal] = round2(data.goals[goal] + amount);
+  data.goals.updatedAt = Date.now();
+}
 
 /** Registra a diferença entre o saldo novo e o atual como "ajuste". */
-function logReserveAdjust(newBalance) {
-  const delta = round2(newBalance - data.goals.reserva);
-  if (delta !== 0) data.reserveLog.push({ id: uid(), date: todayISO(), type: 'ajuste', amount: delta, note: '' });
+function logAdjust(goal, newBalance) {
+  const delta = round2(newBalance - data.goals[goal]);
+  if (delta !== 0) data.goalLog.push({ id: uid(), date: todayISO(), goal, type: 'ajuste', amount: delta, note: '' });
 }
 
-function sortedReserveLog() {
-  return data.reserveLog.slice().sort((a, b) => b.date.localeCompare(a.date) || (b.id < a.id ? -1 : 1));
+function sortLog(list) {
+  return list.slice().sort((a, b) => b.date.localeCompare(a.date) || (b.id < a.id ? -1 : 1));
 }
+
+/** Formulário de lançamento. goal fixo (aba Reserva) ou escolhido (aba Metas). */
+function movementForm(id, goal) {
+  return `<form class="card movement-form" id="${id}" data-goal="${goal || ''}" novalidate>
+      <h2>Novo lançamento</h2>
+      ${goal ? '' : `<div class="seg" role="radiogroup" aria-label="Meta">
+        <label><input type="radio" name="${id}-goal" value="reserva" checked><span>Reserva</span></label>
+        <label><input type="radio" name="${id}-goal" value="lataria"><span>Lataria</span></label>
+      </div>`}
+      <div class="seg" role="radiogroup" aria-label="Tipo">
+        <label><input type="radio" name="${id}-type" value="dep" checked><span>Entrada</span></label>
+        <label><input type="radio" name="${id}-type" value="ret"><span>Saída</span></label>
+      </div>
+      <div class="row">
+        <div class="field"><label for="${id}-date">Data</label><input type="date" id="${id}-date" data-f="date" value="${todayISO()}"></div>
+        <div class="field"><label for="${id}-amount">Valor (R$)</label><input type="text" inputmode="decimal" id="${id}-amount" data-f="amount" placeholder="0,00"></div>
+      </div>
+      <div class="field"><label for="${id}-note">Descrição (opcional)</label><input type="text" id="${id}-note" data-f="note" maxlength="80" placeholder="Ex.: sobra de outubro"></div>
+      <button type="submit" class="btn primary block">Lançar</button>
+    </form>`;
+}
+
+function movementList(list, showGoal) {
+  if (!list.length) return '<div class="empty">Nenhum lançamento ainda.</div>';
+  return sortLog(list).map(m => `
+        <div class="purchase">
+          <div class="purchase-head">
+            <span class="date">${esc(fmtDate(m.date))}</span>
+            <span class="num ${m.amount >= 0 ? 'pos' : 'neg'}">${(m.amount > 0 ? '+' : '−') + ' ' + fmtBRL(Math.abs(m.amount))}</span>
+            <button class="btn small danger icon" data-action="del-move" data-id="${esc(m.id)}" aria-label="Excluir lançamento de ${esc(fmtDate(m.date))}" title="Excluir">✕</button>
+          </div>
+          <div class="small muted">${showGoal ? GOAL_NAMES[m.goal] + ' · ' : ''}${MOVE_TYPES[m.type]}${m.note ? ' · ' + esc(m.note) : ''}</div>
+        </div>`).join('');
+}
+
+function submitMovement(form) {
+  const id = form.id;
+  const goal = form.dataset.goal || (form.querySelector(`input[name="${id}-goal"]:checked`) || {}).value || 'reserva';
+  const type = (form.querySelector(`input[name="${id}-type"]:checked`) || {}).value || 'dep';
+  const dateEl = $('[data-f="date"]', form), amtEl = $('[data-f="amount"]', form);
+  const v = parseNum(amtEl.value);
+  dateEl.classList.remove('invalid'); amtEl.classList.remove('invalid');
+  if (!parseISO(dateEl.value)) { dateEl.classList.add('invalid'); toast('Informe a data.', true); return; }
+  if (!(v > 0)) { amtEl.classList.add('invalid'); toast('Informe um valor maior que zero.', true); return; }
+  addMovement(goal, type, dateEl.value, type === 'ret' ? -v : v, $('[data-f="note"]', form).value.trim());
+  save();
+  toast((type === 'ret' ? 'Saída' : 'Entrada') + ' de ' + fmtBRL(v) + ' na ' + GOAL_NAMES[goal].toLowerCase() + '. Saldo: ' + fmtBRL(data.goals[goal]));
+  renderActive();
+}
+
+function launchSobra() {
+  const fl = monthlyFlow();
+  if (!(fl.sobra > 0)) return;
+  const label = 'sobra de ' + MONTHS[new Date().getMonth()] + '/' + new Date().getFullYear();
+  const already = data.goalLog.some(m => m.note === label);
+  const msg = (already ? 'Você já lançou a ' + label + '. Lançar de novo?\n\n' : '') +
+    'Lançar ' + fmtBRL(fl.toReserva) + ' na reserva e ' + fmtBRL(fl.toLataria) + ' na lataria?';
+  if (!confirm(msg)) return;
+  addMovement('reserva', 'dep', todayISO(), fl.toReserva, label);
+  addMovement('lataria', 'dep', todayISO(), fl.toLataria, label);
+  save();
+  toast('Sobra lançada.');
+  renderActive();
+}
+
+function deleteMovement(id) {
+  const m = data.goalLog.find(x => x.id === id);
+  if (!m) return;
+  if (!confirm('Excluir este lançamento de ' + fmtBRL(Math.abs(m.amount)) + '? O saldo da ' + GOAL_NAMES[m.goal].toLowerCase() + ' será corrigido.')) return;
+  data.goalLog = data.goalLog.filter(x => x.id !== id);
+  data.goals[m.goal] = round2(data.goals[m.goal] - m.amount);
+  data.goals.updatedAt = Date.now();
+  save();
+  toast('Lançamento excluído.');
+  renderActive();
+}
+
+/* ---- Reserva ---- */
 
 function renderReserva() {
   const el = $('#tab-reserva');
@@ -676,9 +786,8 @@ function renderReserva() {
   const fc = forecast();
   const meses = c.gastos > 0 ? saldo / c.gastos : 0;
   const monthKey = todayISO().slice(0, 7);
-  const noMes = data.reserveLog.filter(m => m.date.startsWith(monthKey) && m.type !== 'ajuste')
+  const noMes = data.goalLog.filter(m => m.goal === 'reserva' && m.date.startsWith(monthKey) && m.type !== 'ajuste')
     .reduce((s, m) => s + m.amount, 0);
-  const list = sortedReserveLog();
 
   el.innerHTML = `
     <div class="card">
@@ -696,19 +805,7 @@ function renderReserva() {
       ${c.gastos > 0 ? '' : '<p class="small muted" style="margin-bottom:0">Informe seus gastos mensais em Ajustes para ver quantos meses a reserva cobre.</p>'}
     </div>
 
-    <form class="card" id="reserve-form" novalidate>
-      <h2>Nova movimentação</h2>
-      <div class="seg" role="radiogroup" aria-label="Tipo">
-        <label><input type="radio" name="r-type" value="dep" checked><span>Depósito</span></label>
-        <label><input type="radio" name="r-type" value="ret"><span>Retirada</span></label>
-      </div>
-      <div class="row">
-        <div class="field"><label for="r-date">Data</label><input type="date" id="r-date" value="${todayISO()}"></div>
-        <div class="field"><label for="r-amount">Valor (R$)</label><input type="text" inputmode="decimal" id="r-amount" placeholder="0,00"></div>
-      </div>
-      <div class="field"><label for="r-note">Descrição (opcional)</label><input type="text" id="r-note" maxlength="80" placeholder="Ex.: sobra de outubro"></div>
-      <button type="submit" class="btn primary block">Registrar</button>
-    </form>
+    ${movementForm('reserve-form', 'reserva')}
 
     <form class="card" id="reserve-set-form" novalidate>
       <h2>Corrigir saldo</h2>
@@ -719,56 +816,19 @@ function renderReserva() {
 
     <div class="card">
       <h2>Movimentações</h2>
-      ${list.length ? list.map(m => `
-        <div class="purchase">
-          <div class="purchase-head">
-            <span class="date">${esc(fmtDate(m.date))}</span>
-            <span class="num ${m.amount >= 0 ? 'pos' : 'neg'}">${(m.amount > 0 ? '+' : '−') + ' ' + fmtBRL(Math.abs(m.amount))}</span>
-            <button class="btn small danger" data-action="del-reserve" data-id="${esc(m.id)}" aria-label="Excluir movimentação de ${esc(fmtDate(m.date))}">Excluir</button>
-          </div>
-          <div class="small muted">${RESERVE_TYPES[m.type]}${m.note ? ' · ' + esc(m.note) : ''}</div>
-        </div>`).join('') : '<div class="empty">Nenhuma movimentação ainda.</div>'}
+      ${movementList(data.goalLog.filter(m => m.goal === 'reserva'), false)}
     </div>`;
-}
-
-function submitReserve(ev) {
-  ev.preventDefault();
-  const type = ($('input[name="r-type"]:checked') || {}).value || 'dep';
-  const date = $('#r-date').value;
-  const v = parseNum($('#r-amount').value);
-  $$('#reserve-form input').forEach(i => i.classList.remove('invalid'));
-  if (!parseISO(date)) { $('#r-date').classList.add('invalid'); toast('Informe a data.', true); return; }
-  if (!(v > 0)) { $('#r-amount').classList.add('invalid'); toast('Informe um valor maior que zero.', true); return; }
-  const amount = round2(type === 'ret' ? -v : v);
-  data.reserveLog.push({ id: uid(), date, type, amount, note: $('#r-note').value.trim().slice(0, 80) });
-  data.goals.reserva = round2(data.goals.reserva + amount);
-  data.goals.updatedAt = Date.now();
-  save();
-  toast((type === 'ret' ? 'Retirada' : 'Depósito') + ' de ' + fmtBRL(v) + ' registrado.');
-  renderReserva();
 }
 
 function submitReserveSet(ev) {
   ev.preventDefault();
   const v = parseNum($('#r-set').value || '0');
   if (!(v >= 0)) { $('#r-set').classList.add('invalid'); toast('Valor inválido.', true); return; }
-  logReserveAdjust(round2(v));
+  logAdjust('reserva', round2(v));
   data.goals.reserva = round2(v);
   data.goals.updatedAt = Date.now();
   save();
   toast('Saldo da reserva atualizado.');
-  renderReserva();
-}
-
-function deleteReserve(id) {
-  const m = data.reserveLog.find(x => x.id === id);
-  if (!m) return;
-  if (!confirm('Excluir esta movimentação de ' + fmtBRL(Math.abs(m.amount)) + '? O saldo da reserva será corrigido.')) return;
-  data.reserveLog = data.reserveLog.filter(x => x.id !== id);
-  data.goals.reserva = round2(data.goals.reserva - m.amount);
-  data.goals.updatedAt = Date.now();
-  save();
-  toast('Movimentação excluída.');
   renderReserva();
 }
 
@@ -943,7 +1003,7 @@ function submitConfig(ev) {
 }
 
 function exportBackup() {
-  const payload = { config: data.config, initial: data.initial, purchases: data.purchases, goals: data.goals, reserveLog: data.reserveLog };
+  const payload = { config: data.config, initial: data.initial, purchases: data.purchases, goals: data.goals, goalLog: data.goalLog };
   download('meu-dca-backup-' + todayISO() + '.json', JSON.stringify(payload, null, 2), 'application/json');
 }
 
@@ -990,7 +1050,8 @@ document.addEventListener('click', ev => {
     case 'refresh': refreshPrices(); break;
     case 'suggest': applySuggestion(); break;
     case 'del': deletePurchase(btn.dataset.id); break;
-    case 'del-reserve': deleteReserve(btn.dataset.id); break;
+    case 'del-move': deleteMovement(btn.dataset.id); break;
+    case 'sobra': launchSobra(); break;
     case 'csv': exportCSV(); break;
     case 'export': exportBackup(); break;
     case 'import': $('#import-file').click(); break;
@@ -1009,7 +1070,7 @@ document.addEventListener('input', ev => {
 document.addEventListener('submit', ev => {
   if (ev.target.id === 'buy-form') submitBuy(ev);
   else if (ev.target.id === 'goals-form') submitGoals(ev);
-  else if (ev.target.id === 'reserve-form') submitReserve(ev);
+  else if (ev.target.classList.contains('movement-form')) { ev.preventDefault(); submitMovement(ev.target); }
   else if (ev.target.id === 'reserve-set-form') submitReserveSet(ev);
   else if (ev.target.id === 'cfg-form') submitConfig(ev);
 });

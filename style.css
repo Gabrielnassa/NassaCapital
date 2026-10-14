@@ -202,12 +202,15 @@ input.invalid { border-color: var(--neg); }
 .seg input:checked + span { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .15); }
 .seg input:focus-visible + span { outline: 2px solid var(--accent); }
 
+details.card > summary { cursor: pointer; font-size: 15px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; list-style-position: inside; }
+
 /* Histórico */
 .purchase { border-top: 1px solid var(--border); padding: 12px 0; }
 .purchase:first-of-type { border-top: 0; padding-top: 0; }
 .purchase-head { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin-bottom: 6px; }
 .purchase-head .date { font-weight: 700; }
 .purchase-head .num { white-space: nowrap; }
+.btn.icon { width: 34px; padding: 0; flex: none; }
 .purchase-head .btn { margin-left: auto; }
 .purchase-items { font-size: 13px; }
 .purchase-items div { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
