@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Meu DCA">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Cpath d='M14 44l12-12 8 8 16-18' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <header class="topbar">
@@ -23,6 +23,7 @@
   <main>
     <section id="tab-inicio" class="tab" aria-labelledby="nav-inicio"></section>
     <section id="tab-comprar" class="tab" aria-labelledby="nav-comprar" hidden></section>
+    <section id="tab-reserva" class="tab" aria-labelledby="nav-reserva" hidden></section>
     <section id="tab-metas" class="tab" aria-labelledby="nav-metas" hidden></section>
     <section id="tab-historico" class="tab" aria-labelledby="nav-historico" hidden></section>
     <section id="tab-ajustes" class="tab" aria-labelledby="nav-ajustes" hidden></section>
@@ -36,6 +37,10 @@
     <button id="nav-comprar" data-tab="comprar">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
       <span>Comprar</span>
+    </button>
+    <button id="nav-reserva" data-tab="reserva">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span>Reserva</span>
     </button>
     <button id="nav-metas" data-tab="metas">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
@@ -53,6 +58,6 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

@@ -8,6 +8,7 @@ Web app estático para acompanhar um **DCA semanal em cripto**, a **reserva de e
 | --- | --- |
 | **Início** | Valor total em US$ e R$, valor investido, resultado %, data da próxima compra (toda segunda, a partir da data de início), gráfico de rosca com % atual × % alvo e a lista de ativos com quantidade, preço atual, preço médio, resultado e desvio do alvo. O desvio aparece como "no alvo" se estiver dentro de ±2 p.p. e fica vermelho acima de ±10 p.p. |
 | **Comprar** | Registra a compra da semana com a data, a cotação do dólar (já preenchida) e, para cada ativo com alvo > 0, o valor em US$ e o preço pago (já preenchido com o preço atual). A quantidade é calculada sozinha. O botão **Sugerir divisão** divide o aporte semanal entre os ativos *abaixo* do alvo, proporcional ao déficit, sem vender nada. |
+| **Reserva** | Saldo da reserva de emergência, barra até a meta, quantos meses de gastos ela cobre, previsão de quando fecha e quanto guardar por mês. Registra depósitos e retiradas (com descrição opcional), corrige o saldo quando ele diverge do banco e mantém o histórico de movimentações. Excluir uma movimentação corrige o saldo. |
 | **Metas** | Barras de progresso da reserva e da lataria, campos para atualizar os saldos, previsão do mês em que cada meta fecha e o fluxo do mês. |
 | **Histórico** | Lista das compras (da mais nova para a mais antiga), com botão de excluir e exportação em CSV para o Imposto de Renda. |
 | **Ajustes** | Aporte semanal, data da 1ª compra, alocação alvo (precisa somar 100%), renda, gastos, metas, % da sobra para a reserva, posição inicial de cada ativo, backup e "apagar tudo". |
@@ -48,7 +49,8 @@ Separador `;`, vírgula decimal e BOM (abre direto no Excel em português). Colu
   "initial": { "BTC": { "qty": 0, "cost": 0 } },
   "purchases": [ { "id": "abc", "date": "2026-01-05", "fx": 5.4,
                    "items": { "BTC": { "usd": 25, "price": 100000, "qty": 0.00025 } } } ],
-  "goals": { "reserva": 0, "lataria": 0, "updatedAt": null }
+  "goals": { "reserva": 0, "lataria": 0, "updatedAt": null },
+  "reserveLog": [ { "id": "r1", "date": "2026-10-14", "type": "dep", "amount": 500, "note": "" } ]
 }
 ```
 

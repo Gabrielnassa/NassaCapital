@@ -135,6 +135,7 @@ label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px
 .field { margin-bottom: 12px; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.row > *, .row3 > *, .alloc > * { min-width: 0; }
 input[type="text"], input[type="date"], input[type="number"] {
   width: 100%;
   font: inherit;
@@ -145,6 +146,7 @@ input[type="text"], input[type="date"], input[type="number"] {
   border-radius: 10px;
   padding: 10px 11px;
   min-height: 44px;
+  min-width: 0;
   -webkit-appearance: none;
   appearance: none;
 }
@@ -192,11 +194,20 @@ input.invalid { border-color: var(--neg); }
 .flow tr:last-child td { border-bottom: 0; }
 .flow tr.total td { font-weight: 700; }
 
+/* Reserva */
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--surface-2); border-radius: 12px; margin-bottom: 12px; }
+.seg label { margin: 0; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg span { display: flex; align-items: center; justify-content: center; min-height: 38px; border-radius: 9px; font-size: 15px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.seg input:checked + span { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .15); }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); }
+
 /* Histórico */
 .purchase { border-top: 1px solid var(--border); padding: 12px 0; }
 .purchase:first-of-type { border-top: 0; padding-top: 0; }
-.purchase-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.purchase-head { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin-bottom: 6px; }
 .purchase-head .date { font-weight: 700; }
+.purchase-head .num { white-space: nowrap; }
 .purchase-head .btn { margin-left: auto; }
 .purchase-items { font-size: 13px; }
 .purchase-items div { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
@@ -215,7 +226,7 @@ input.invalid { border-color: var(--neg); }
 /* Barra de abas */
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
-  display: grid; grid-template-columns: repeat(5, 1fr);
+  display: grid; grid-template-columns: repeat(6, 1fr);
   height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   background: var(--surface);
@@ -234,7 +245,7 @@ input.invalid { border-color: var(--neg); }
   font: inherit; font-size: 11px; font-weight: 600;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
-.tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tabbar svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tabbar button[aria-current="page"] { color: var(--accent); }
 
 .toast {

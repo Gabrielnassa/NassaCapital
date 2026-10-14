@@ -138,6 +138,7 @@ function defaults() {
     initial: Object.fromEntries(SYMS.map(s => [s, { qty: 0, cost: 0 }])),
     purchases: [],
     goals: { reserva: 0, lataria: 0, updatedAt: null },
+    reserveLog: [],
   };
 }
 
@@ -182,6 +183,13 @@ function normalize(raw) {
 
   const g = raw.goals || {};
   d.goals = { reserva: num(g.reserva, 0), lataria: num(g.lataria, 0), updatedAt: g.updatedAt || null };
+
+  if (Array.isArray(raw.reserveLog)) {
+    d.reserveLog = raw.reserveLog
+      .filter(m => m && parseISO(m.date) && ['dep', 'ret', 'ajuste'].includes(m.type))
+      .map(m => ({ id: String(m.id || uid()), date: m.date, type: m.type, amount: round2(num(m.amount, 0)), note: String(m.note || '').slice(0, 80) }))
+      .filter(m => m.amount !== 0);
+  }
   return d;
 }
 
@@ -362,19 +370,19 @@ function forecast() {
 let activeTab = 'inicio';
 
 function renderActive() {
-  const fn = { inicio: renderInicio, comprar: renderComprar, metas: renderMetas, historico: renderHistorico, ajustes: renderAjustes }[activeTab];
+  const fn = { inicio: renderInicio, comprar: renderComprar, reserva: renderReserva, metas: renderMetas, historico: renderHistorico, ajustes: renderAjustes }[activeTab];
   fn();
 }
 
 function showTab(tab) {
-  if (!['inicio', 'comprar', 'metas', 'historico', 'ajustes'].includes(tab)) tab = 'inicio';
+  if (!['inicio', 'comprar', 'reserva', 'metas', 'historico', 'ajustes'].includes(tab)) tab = 'inicio';
   activeTab = tab;
   for (const sec of $$('.tab')) sec.hidden = sec.id !== 'tab-' + tab;
   for (const b of $$('.tabbar button')) {
     if (b.dataset.tab === tab) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   }
-  const titles = { inicio: 'Meu DCA', comprar: 'Comprar', metas: 'Metas', historico: 'Histórico', ajustes: 'Ajustes' };
+  const titles = { inicio: 'Meu DCA', comprar: 'Comprar', reserva: 'Reserva', metas: 'Metas', historico: 'Histórico', ajustes: 'Ajustes' };
   $('#title').textContent = titles[tab];
   renderActive();
   window.scrollTo(0, 0);
@@ -637,10 +645,131 @@ function submitGoals(ev) {
   const r = parseNum($('#g-reserva').value || '0');
   const l = parseNum($('#g-lataria').value || '0');
   if (!(r >= 0) || !(l >= 0)) { toast('Valores inválidos.', true); return; }
+  logReserveAdjust(round2(r));
   data.goals = { reserva: round2(r), lataria: round2(l), updatedAt: Date.now() };
   save();
   toast('Saldos atualizados.');
   renderMetas();
+}
+
+/* ---- Reserva ---- */
+
+const RESERVE_TYPES = { dep: 'Depósito', ret: 'Retirada', ajuste: 'Ajuste de saldo' };
+
+/** Registra a diferença entre o saldo novo e o atual como "ajuste". */
+function logReserveAdjust(newBalance) {
+  const delta = round2(newBalance - data.goals.reserva);
+  if (delta !== 0) data.reserveLog.push({ id: uid(), date: todayISO(), type: 'ajuste', amount: delta, note: '' });
+}
+
+function sortedReserveLog() {
+  return data.reserveLog.slice().sort((a, b) => b.date.localeCompare(a.date) || (b.id < a.id ? -1 : 1));
+}
+
+function renderReserva() {
+  const el = $('#tab-reserva');
+  const c = data.config;
+  const saldo = data.goals.reserva;
+  const meta = c.metaReserva;
+  const falta = Math.max(0, meta - saldo);
+  const fl = monthlyFlow();
+  const fc = forecast();
+  const meses = c.gastos > 0 ? saldo / c.gastos : 0;
+  const monthKey = todayISO().slice(0, 7);
+  const noMes = data.reserveLog.filter(m => m.date.startsWith(monthKey) && m.type !== 'ajuste')
+    .reduce((s, m) => s + m.amount, 0);
+  const list = sortedReserveLog();
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="muted small">Saldo da reserva</div>
+      <div class="hero-value num">${fmtBRL(saldo)}</div>
+      <div class="hero-sub num">${meta > 0 ? 'Meta ' + fmtBRL(meta) : 'Defina a meta em Ajustes'}</div>
+      ${meta > 0 ? `<div class="bar ${saldo >= meta ? 'done' : ''}" style="margin-top:12px"><div style="width:${Math.min(100, saldo / meta * 100)}%"></div></div>
+      <div class="goal-foot num"><span>${fmtPct(Math.min(100, saldo / meta * 100))}</span><span>${saldo >= meta ? 'Meta atingida ✓' : 'Faltam ' + fmtBRL(falta)}</span></div>` : ''}
+      <div class="stats">
+        <div class="stat"><div class="label">Cobre</div><div class="value num">${c.gastos > 0 ? nf(1, 1).format(meses) + ' meses' : '—'}</div></div>
+        <div class="stat"><div class="label">Previsão</div><div class="value num">${!(meta > 0) ? '—' : saldo >= meta ? 'fechada' : fc.reserva instanceof Date ? fmtMonth(fc.reserva) : 'sem sobra'}</div></div>
+        <div class="stat"><div class="label">Guardar/mês</div><div class="value num">${fmtBRL(fl.toReserva)}</div></div>
+        <div class="stat"><div class="label">Movimentado no mês</div><div class="value num ${noMes > 0 ? 'pos' : noMes < 0 ? 'neg' : ''}">${(noMes > 0 ? '+' : '') + fmtBRL(noMes)}</div></div>
+      </div>
+      ${c.gastos > 0 ? '' : '<p class="small muted" style="margin-bottom:0">Informe seus gastos mensais em Ajustes para ver quantos meses a reserva cobre.</p>'}
+    </div>
+
+    <form class="card" id="reserve-form" novalidate>
+      <h2>Nova movimentação</h2>
+      <div class="seg" role="radiogroup" aria-label="Tipo">
+        <label><input type="radio" name="r-type" value="dep" checked><span>Depósito</span></label>
+        <label><input type="radio" name="r-type" value="ret"><span>Retirada</span></label>
+      </div>
+      <div class="row">
+        <div class="field"><label for="r-date">Data</label><input type="date" id="r-date" value="${todayISO()}"></div>
+        <div class="field"><label for="r-amount">Valor (R$)</label><input type="text" inputmode="decimal" id="r-amount" placeholder="0,00"></div>
+      </div>
+      <div class="field"><label for="r-note">Descrição (opcional)</label><input type="text" id="r-note" maxlength="80" placeholder="Ex.: sobra de outubro"></div>
+      <button type="submit" class="btn primary block">Registrar</button>
+    </form>
+
+    <form class="card" id="reserve-set-form" novalidate>
+      <h2>Corrigir saldo</h2>
+      <p class="small muted" style="margin-top:0">Use se o saldo do banco estiver diferente. A diferença entra no histórico como ajuste.</p>
+      <div class="field"><label for="r-set">Saldo real (R$)</label><input type="text" inputmode="decimal" id="r-set" value="${inputVal(saldo)}" placeholder="0,00"></div>
+      <button type="submit" class="btn block">Salvar saldo</button>
+    </form>
+
+    <div class="card">
+      <h2>Movimentações</h2>
+      ${list.length ? list.map(m => `
+        <div class="purchase">
+          <div class="purchase-head">
+            <span class="date">${esc(fmtDate(m.date))}</span>
+            <span class="num ${m.amount >= 0 ? 'pos' : 'neg'}">${(m.amount > 0 ? '+' : '−') + ' ' + fmtBRL(Math.abs(m.amount))}</span>
+            <button class="btn small danger" data-action="del-reserve" data-id="${esc(m.id)}" aria-label="Excluir movimentação de ${esc(fmtDate(m.date))}">Excluir</button>
+          </div>
+          <div class="small muted">${RESERVE_TYPES[m.type]}${m.note ? ' · ' + esc(m.note) : ''}</div>
+        </div>`).join('') : '<div class="empty">Nenhuma movimentação ainda.</div>'}
+    </div>`;
+}
+
+function submitReserve(ev) {
+  ev.preventDefault();
+  const type = ($('input[name="r-type"]:checked') || {}).value || 'dep';
+  const date = $('#r-date').value;
+  const v = parseNum($('#r-amount').value);
+  $$('#reserve-form input').forEach(i => i.classList.remove('invalid'));
+  if (!parseISO(date)) { $('#r-date').classList.add('invalid'); toast('Informe a data.', true); return; }
+  if (!(v > 0)) { $('#r-amount').classList.add('invalid'); toast('Informe um valor maior que zero.', true); return; }
+  const amount = round2(type === 'ret' ? -v : v);
+  data.reserveLog.push({ id: uid(), date, type, amount, note: $('#r-note').value.trim().slice(0, 80) });
+  data.goals.reserva = round2(data.goals.reserva + amount);
+  data.goals.updatedAt = Date.now();
+  save();
+  toast((type === 'ret' ? 'Retirada' : 'Depósito') + ' de ' + fmtBRL(v) + ' registrado.');
+  renderReserva();
+}
+
+function submitReserveSet(ev) {
+  ev.preventDefault();
+  const v = parseNum($('#r-set').value || '0');
+  if (!(v >= 0)) { $('#r-set').classList.add('invalid'); toast('Valor inválido.', true); return; }
+  logReserveAdjust(round2(v));
+  data.goals.reserva = round2(v);
+  data.goals.updatedAt = Date.now();
+  save();
+  toast('Saldo da reserva atualizado.');
+  renderReserva();
+}
+
+function deleteReserve(id) {
+  const m = data.reserveLog.find(x => x.id === id);
+  if (!m) return;
+  if (!confirm('Excluir esta movimentação de ' + fmtBRL(Math.abs(m.amount)) + '? O saldo da reserva será corrigido.')) return;
+  data.reserveLog = data.reserveLog.filter(x => x.id !== id);
+  data.goals.reserva = round2(data.goals.reserva - m.amount);
+  data.goals.updatedAt = Date.now();
+  save();
+  toast('Movimentação excluída.');
+  renderReserva();
 }
 
 /* ---- Histórico ---- */
@@ -814,7 +943,7 @@ function submitConfig(ev) {
 }
 
 function exportBackup() {
-  const payload = { config: data.config, initial: data.initial, purchases: data.purchases, goals: data.goals };
+  const payload = { config: data.config, initial: data.initial, purchases: data.purchases, goals: data.goals, reserveLog: data.reserveLog };
   download('meu-dca-backup-' + todayISO() + '.json', JSON.stringify(payload, null, 2), 'application/json');
 }
 
@@ -861,6 +990,7 @@ document.addEventListener('click', ev => {
     case 'refresh': refreshPrices(); break;
     case 'suggest': applySuggestion(); break;
     case 'del': deletePurchase(btn.dataset.id); break;
+    case 'del-reserve': deleteReserve(btn.dataset.id); break;
     case 'csv': exportCSV(); break;
     case 'export': exportBackup(); break;
     case 'import': $('#import-file').click(); break;
@@ -879,6 +1009,8 @@ document.addEventListener('input', ev => {
 document.addEventListener('submit', ev => {
   if (ev.target.id === 'buy-form') submitBuy(ev);
   else if (ev.target.id === 'goals-form') submitGoals(ev);
+  else if (ev.target.id === 'reserve-form') submitReserve(ev);
+  else if (ev.target.id === 'reserve-set-form') submitReserveSet(ev);
   else if (ev.target.id === 'cfg-form') submitConfig(ev);
 });
 
