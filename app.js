@@ -628,7 +628,6 @@ function renderMetas() {
   el.innerHTML = `
     <div class="card">
       <h2>Progresso</h2>
-      ${goalBlock('Reserva de emergência', data.goals.reserva, c.metaReserva, fc.reserva)}
       ${goalBlock('Lataria do carro', data.goals.lataria, c.metaLataria, fc.lataria)}
       <div class="small muted" style="margin-top:10px">${data.goals.updatedAt ? 'Saldos atualizados em ' + fmtDateTime(data.goals.updatedAt) : 'Saldos ainda não informados.'}</div>
     </div>
