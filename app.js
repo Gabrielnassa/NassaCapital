@@ -498,6 +498,18 @@ function renderInicio() {
     <div class="card">
       <h2>Ativos</h2>
       ${assetRows}
+      <details class="legend-help">
+        <summary>O que significam as etiquetas?</summary>
+        <p>A etiqueta mostra a diferença entre o peso atual do ativo na carteira e o alvo, em <b>pontos percentuais (p.p.)</b>. Ex.: atual 36,7% e alvo 15% = <b>+21,7 p.p.</b></p>
+        <ul>
+          <li><span class="badge ok">no alvo</span> até 2 p.p. de diferença</li>
+          <li><span class="badge mid">±5,0 p.p.</span> entre 2 e 10 p.p.</li>
+          <li><span class="badge bad">±15,0 p.p.</span> mais de 10 p.p.</li>
+          <li><span class="badge">fora do plano</span> alvo 0%, não comprar mais</li>
+        </ul>
+        <p><b>+</b> = acima do alvo (não recebe aporte) · <b>−</b> = abaixo do alvo (o "Sugerir divisão" manda o dinheiro para ele). Não é preciso vender: as compras semanais equilibram a carteira.</p>
+        <p><b>Médio</b>: preço médio que você pagou · <b>Resultado</b>: ganho ou perda no ativo · <b>Atual / Alvo</b>: peso hoje e peso desejado na carteira.</p>
+      </details>
     </div>`;
 }
 

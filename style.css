@@ -130,6 +130,14 @@ h2 { font-size: 15px; margin: 0 0 10px; color: var(--muted); font-weight: 600; t
 .badge.bad { background: var(--neg-bg); color: var(--neg); }
 .badge.mid { background: var(--warn-bg); color: var(--warn); }
 
+.legend-help { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 12px; font-size: 13px; color: var(--muted); }
+.legend-help summary { cursor: pointer; font-weight: 600; color: var(--accent); font-size: 14px; }
+.legend-help p { margin: 10px 0 0; }
+.legend-help b { color: var(--text); }
+.legend-help ul { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.legend-help li { display: flex; align-items: center; gap: 8px; }
+.legend-help .badge { min-width: 92px; text-align: center; }
+
 /* Formulários */
 label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
 .field { margin-bottom: 12px; }
