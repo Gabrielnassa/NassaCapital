@@ -366,7 +366,7 @@ function renderActive() {
   fn();
 }
 
-function showTab(tab, push = true) {
+function showTab(tab) {
   if (!['inicio', 'comprar', 'metas', 'historico', 'ajustes'].includes(tab)) tab = 'inicio';
   activeTab = tab;
   for (const sec of $$('.tab')) sec.hidden = sec.id !== 'tab-' + tab;
@@ -376,7 +376,6 @@ function showTab(tab, push = true) {
   }
   const titles = { inicio: 'Meu DCA', comprar: 'Comprar', metas: 'Metas', historico: 'Histórico', ajustes: 'Ajustes' };
   $('#title').textContent = titles[tab];
-  if (push && location.hash !== '#' + tab) history.replaceState(null, '', '#' + tab);
   renderActive();
   window.scrollTo(0, 0);
 }
@@ -890,9 +889,46 @@ document.addEventListener('change', ev => {
   }
 });
 
-window.addEventListener('hashchange', () => showTab(location.hash.slice(1), false));
+/* ---------- Importação por link ----------
+   Um link no formato  .../#importar=<JSON em base64url>  carrega um plano.
+   O trecho depois de "#" nunca é enviado ao servidor nem fica no GitHub.
+   O link pode continuar na URL (ex.: atalho da tela de início): cada plano
+   só é importado uma vez por navegador. */
+
+const IMPORTED_KEY = 'meudca:imported:v1';
+
+function decodeBase64Url(str) {
+  const b64 = str.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((str.length + 3) % 4);
+  const bin = atob(b64);
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function importFromLink() {
+  const m = /^#importar=([A-Za-z0-9_-]+)$/.exec(location.hash);
+  if (!m) return;
+  const token = m[1];
+  if (storageGet(IMPORTED_KEY) === token) return;
+  let raw;
+  try { raw = JSON.parse(decodeBase64Url(token)); } catch {
+    toast('Link de importação inválido.', true); return;
+  }
+  if (!raw || typeof raw !== 'object' || !(raw.config || raw.initial || raw.purchases || raw.goals)) {
+    toast('Link de importação inválido.', true); return;
+  }
+  const hasData = data.purchases.length || SYMS.some(s => data.initial[s].qty > 0);
+  if (hasData && !confirm('Importar o plano deste link? Os dados atuais serão substituídos.')) {
+    storageSet(IMPORTED_KEY, token);
+    return;
+  }
+  data = normalize(raw);
+  save();
+  storageSet(IMPORTED_KEY, token);
+  toast('Plano importado.');
+}
 
 /* ---------- Início ---------- */
 
-showTab(location.hash.slice(1) || 'inicio', false);
+importFromLink();
+showTab('inicio');
 refreshPrices();

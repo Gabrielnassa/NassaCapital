@@ -35,6 +35,7 @@ Separador `;`, vírgula decimal e BOM (abre direto no Excel em português). Colu
 - **Este repositório é público e não contém nenhum dado pessoal.** O código traz apenas valores padrão genéricos.
 - Todos os dados (plano, compras, metas) ficam **somente no `localStorage` do seu navegador**. Nada é enviado a nenhum servidor. A única chamada externa é a consulta de preços na CoinGecko, que não leva nenhum dado seu.
 - Para carregar o seu plano, use **Ajustes → Importar backup** com o seu arquivo JSON (por exemplo `meu-plano.json`). **Não suba esse arquivo para o GitHub.** O `.gitignore` já ignora `meu-plano.json` e `*-backup*.json` por segurança.
+- Também dá para carregar o plano por um **link de importação**: `https://<site>/#importar=<JSON em base64url>`. O que vem depois de `#` fica só no seu aparelho: o navegador não envia esse trecho ao servidor e ele não fica no GitHub. Cada link é importado uma vez por navegador. Se você adicionar a página à tela de início com o link aberto, o app instalado também importa o plano na primeira vez que abrir. Guarde esse link como guardaria o arquivo de backup.
 - Exporte um backup de vez em quando. Limpar os dados do Safari apaga os dados do app.
 
 ### Formato do backup
