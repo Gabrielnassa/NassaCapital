@@ -1,0 +1,168 @@
+@import 'tailwindcss';
+
+/* Tokens de design. Regra: fundo neutro quente, UMA cor de destaque (verde-petróleo),
+   alta e baixa dessaturadas, bordas de 1px, raio de 4 a 6px, quase sem sombra. */
+:root {
+  --bg: #f7f6f3;
+  --surface: #fdfcfa;
+  --sunken: #efede8;
+  --border: #e0ddd6;
+  --border-strong: #cdc9c0;
+  --text: #1b1a17;
+  --muted: #66635c;
+  --faint: #99968d;
+  --accent: #0e5a5a;
+  --accent-hover: #0a4747;
+  --accent-soft: #dcebe8;
+  --on-accent: #ffffff;
+  --up: #3b7556;
+  --down: #a9544a;
+  --warn: #86661c;
+  color-scheme: light;
+}
+[data-theme='dark'] {
+  --bg: #111110;
+  --surface: #181817;
+  --sunken: #0b0b0a;
+  --border: #2a2a27;
+  --border-strong: #3b3b37;
+  --text: #eceae4;
+  --muted: #a3a097;
+  --faint: #716f68;
+  --accent: #6db3a9;
+  --accent-hover: #86c5bb;
+  --accent-soft: #1a2d2b;
+  --on-accent: #0b1615;
+  --up: #7db592;
+  --down: #d48c81;
+  --warn: #c9a95a;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-up: var(--up);
+  --color-down: var(--down);
+  --color-warn: var(--warn);
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+button,
+a,
+input,
+[role='tab'] {
+  transition:
+    background-color 130ms,
+    border-color 130ms,
+    color 130ms;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Todo número: fonte mono, algarismos tabulares. */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Tabela densa: linhas de 36px, cabeçalho discreto, números à direita. */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.tbl th {
+  height: 32px;
+  padding: 0 10px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-strong);
+}
+.tbl td {
+  height: 36px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.tbl tr:last-child td {
+  border-bottom: 0;
+}
+.tbl .r {
+  text-align: right;
+}
+.tbl tbody tr.row:hover td {
+  background: var(--sunken);
+}
+.tbl td.group {
+  height: 30px;
+  background: var(--sunken);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+/* Variante para a tabela da Carteira: 12 colunas precisam caber em 1280px. */
+.tbl-tight th,
+.tbl-tight td {
+  padding: 0 6px;
+}
+.tbl-tight th:first-child,
+.tbl-tight td:first-child {
+  padding-left: 10px;
+}
+.tbl-tight th:last-child,
+.tbl-tight td:last-child {
+  padding-right: 10px;
+}
+.tbl-tight .num {
+  font-size: 12px;
+}

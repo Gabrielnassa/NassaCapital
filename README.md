@@ -1,0 +1,49 @@
+# Carteira
+
+App web pessoal, instalável no celular (PWA), para acompanhar cripto, ações e FIIs numa carteira só: o que comprar hoje, a distância de cada ativo até a meta e quanto rendeu.
+
+## Rodar no computador
+
+```bash
+npm install
+cp .env.example .env   # preencha VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY
+npm run dev
+```
+
+Abra http://localhost:5173. A página `/design` mostra todos os componentes nos temas claro e escuro e não precisa de login.
+
+Verificações: `npm run lint`, `npm run typecheck`, `npm test` e `npm run test:db` (testa o banco num Postgres temporário, sem Docker).
+
+## Configurar o Supabase
+
+1. Crie um projeto novo no Supabase, separado dos outros.
+2. Aplique as migrations com a CLI:
+   ```bash
+   npx supabase link --project-ref SEU_REF
+   npx supabase db push
+   ```
+   A migration `..._cron.sql` precisa de dois segredos no Vault. Rode antes, no SQL Editor:
+   ```sql
+   select vault.create_secret('https://SEU_REF.supabase.co', 'project_url');
+   select vault.create_secret('UM_TEXTO_ALEATORIO_LONGO', 'cron_secret');
+   ```
+3. Grave as chaves das APIs como secrets das funções (nunca no `.env` do front) e publique as funções:
+   ```bash
+   npx supabase secrets set COINGECKO_API_KEY=... BRAPI_TOKEN=... CRON_SECRET=UM_TEXTO_ALEATORIO_LONGO
+   npx supabase functions deploy update-prices daily-snapshot asset-lookup
+   ```
+   `CRON_SECRET` tem de ser igual ao `cron_secret` do Vault.
+4. Em Authentication > URL Configuration, coloque a URL do app (a da Vercel e `http://localhost:5173`) em Site URL e Redirect URLs.
+5. Entre no app com seu e-mail (link mágico). Na tela Hoje, toque em "Carregar minha carteira de 11/11/2026".
+6. Depois do primeiro login, desative novos cadastros em Authentication > Sign In / Providers, para o app ficar só seu.
+7. Em Ajustes > Ativos, confira os IDs do CoinGecko de BP (`backpack`) e CARDS (`collector-crypt`): foram preenchidos sem consulta à API e precisam de confirmação.
+
+## Publicar na Vercel
+
+Importe o repositório na Vercel (framework Vite), defina `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` nas variáveis de ambiente e publique. Para o link mágico e as rotas funcionarem ao recarregar a página, o `vercel.json` já redireciona tudo para `index.html`.
+
+No celular, abra o endereço e use "Adicionar à tela de início".
+
+## Como os preços chegam
+
+O pg_cron chama a função `update-prices` a cada 15 minutos. Ela busca cripto no CoinGecko (o dia todo), B3 na brapi e o dólar (só em horário de pregão) e grava em `prices`. Se uma fonte falha ou devolve limite (429), o último preço bom continua valendo. Uma vez por dia, `daily-snapshot` grava o patrimônio por classe em `snapshots`. O navegador nunca chama as APIs de preço.

@@ -1,0 +1,19 @@
+project_id = "carteira"
+
+[auth]
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173"]
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+# As duas funções fazem a própria autenticação (segredo do cron ou JWT do usuário).
+[functions.update-prices]
+verify_jwt = false
+
+[functions.daily-snapshot]
+verify_jwt = false
+
+[functions.asset-lookup]
+verify_jwt = false
