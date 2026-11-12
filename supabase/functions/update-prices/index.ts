@@ -2,7 +2,7 @@
 // Chamada pelo pg_cron a cada 15 min (header x-cron-secret) ou pelo dono do app ("Atualizar agora").
 // Erro ou limite (429) em uma fonte nunca apaga o último preço bom: só grava o que veio válido.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
-import { isB3Open, parseAwesomeFx, parseBrapi, parseBrapiFx, parseCoinGecko, type Quote } from './quotes.ts'
+import { isB3Open, parseAwesomeFx, parseBrapi, parseBrapiFx, parseCoinGecko, parseCoinGeckoFx, type Quote } from './quotes.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -64,19 +64,20 @@ Deno.serve(async (req) => {
       change_pct_24h: q.changePct24h, source_ts: q.sourceTs, fetched_at: now.toISOString(),
     })
 
-  // --- Cripto: 24 horas, todos os IDs em uma chamada.
+  // --- Cripto: 24 horas, todos os IDs em uma chamada. O bitcoin vai sempre junto, em dólares e em
+  // reais, para tirar daí o câmbio USD-BRL.
   const crypto = assets.filter((a) => a.source === 'coingecko' && a.source_id)
+  let cgFx: Quote | null = null
   if (crypto.length) {
     try {
-      const ids = [...new Set(crypto.map((a) => a.source_id))].join(',')
-      const quotes = parseCoinGecko(
-        await getJson(
-          `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(ids)}` +
-            '&vs_currencies=usd&include_24hr_change=true&include_last_updated_at=true',
-          { 'x-cg-demo-api-key': Deno.env.get('COINGECKO_API_KEY') ?? '' },
-        ),
-        now,
+      const ids = [...new Set([...crypto.map((a) => a.source_id), 'bitcoin'])].join(',')
+      const body = await getJson(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(ids)}` +
+          '&vs_currencies=usd,brl&include_24hr_change=true&include_last_updated_at=true',
+        { 'x-cg-demo-api-key': Deno.env.get('COINGECKO_API_KEY') ?? '' },
       )
+      const quotes = parseCoinGecko(body, now)
+      cgFx = parseCoinGeckoFx(body, now)
       for (const a of crypto) {
         const q = quotes.get(a.source_id)
         if (q) push(a, q, 'USD')
@@ -118,13 +119,14 @@ Deno.serve(async (req) => {
     }
   }
 
-  // --- Câmbio USD-BRL: uma linha por usuário. Mesma janela da B3; brapi primeiro, AwesomeAPI de reserva.
+  // --- Câmbio USD-BRL: uma linha por usuário. Primeiro o do CoinGecko (24 horas, mesma chamada).
+  // Sem ele, brapi e depois AwesomeAPI, só no pregão ou para quem ainda não tem câmbio gravado.
   const users = [...new Set(assets.map((a) => a.user_id as string))]
   const hasFx = new Set(existing.filter((p) => p.fx_pair === 'USD-BRL').map((p) => p.user_id))
-  const fxUsers = users.filter((u) => b3Open || !hasFx.has(u))
   const fxRows: Record<string, unknown>[] = []
-  if (fxUsers.length) {
-    let fx: Quote | null = null
+  let fx = cgFx
+  const needFallback = !fx && users.some((u) => b3Open || !hasFx.has(u))
+  if (needFallback) {
     try {
       fx = parseBrapiFx(await getJson('https://brapi.dev/api/v2/currency?currency=USD-BRL', brapiAuth), now)
     } catch { /* tenta a reserva */ }
@@ -135,15 +137,14 @@ Deno.serve(async (req) => {
         errors.push(`câmbio: ${(e as Error).message}`)
       }
     }
-    if (fx) {
-      for (const u of fxUsers) {
-        fxRows.push({
-          user_id: u, fx_pair: 'USD-BRL', price: fx.price, currency: 'BRL',
-          change_pct_24h: fx.changePct24h, source_ts: fx.sourceTs, fetched_at: now.toISOString(),
-        })
-      }
-    } else if (!errors.some((e) => e.startsWith('câmbio'))) {
-      errors.push('câmbio: nenhuma fonte devolveu USD-BRL')
+    if (!fx && !errors.some((e) => e.startsWith('câmbio'))) errors.push('câmbio: nenhuma fonte devolveu USD-BRL')
+  }
+  if (fx) {
+    for (const u of users) {
+      fxRows.push({
+        user_id: u, fx_pair: 'USD-BRL', price: fx.price, currency: 'BRL',
+        change_pct_24h: fx.changePct24h, source_ts: fx.sourceTs, fetched_at: now.toISOString(),
+      })
     }
   }
 

@@ -40,6 +40,18 @@ export function parseCoinGecko(json: unknown, now: Date): Map<string, Quote> {
   return out
 }
 
+/**
+ * Câmbio USD-BRL derivado do CoinGecko: preço do bitcoin em reais dividido pelo preço em dólares.
+ * Vem na mesma chamada das cotações, funciona 24 horas e não depende de outra chave.
+ */
+export function parseCoinGeckoFx(json: unknown, now: Date): Quote | null {
+  const r = (json as Record<string, Record<string, unknown>> | null)?.bitcoin
+  const usd = num(r?.usd)
+  const brl = num(r?.brl)
+  if (!r || usd == null || brl == null || usd <= 0 || brl <= 0) return null
+  return { price: Math.round((brl / usd) * 10000) / 10000, changePct24h: null, sourceTs: iso(r.last_updated_at, now) }
+}
+
 /** Resposta de /api/quote/{tickers} da brapi. */
 export function parseBrapi(json: unknown, now: Date): Map<string, Quote> {
   const out = new Map<string, Quote>()

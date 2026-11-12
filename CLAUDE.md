@@ -43,7 +43,7 @@ Vite + React + TypeScript strict + Tailwind v4 + vite-plugin-pwa. Radix UI só c
 - "Gerar plano pelo que falta": usa o caixa (classe `cash`), compra o déficit inteiro de cada ativo que não é caixa nem stablecoin, reduz na proporção se o caixa não cobrir; o que sobra fica de reserva. Execução abaixo de US$ 10 vira semanal ou compra única.
 - Editar plano muda só nome e origem do dinheiro. Para mudar valores, criar outro plano.
 - Tabela extra `settings` (moeda principal, tema).
-- B3 e câmbio só são buscados em dia útil das 10h às 18h30 de Brasília (feriados não são tratados).
+- B3 só é buscada em dia útil das 10h às 18h30 de Brasília (feriados não são tratados). O câmbio USD-BRL vem do CoinGecko (bitcoin em reais ÷ bitcoin em dólares), 24 horas, na mesma chamada das cotações; brapi e AwesomeAPI são reservas.
 - Número digitado: vírgula é decimal ("1.234,56"); sem vírgula, o ponto é decimal ("0.5").
 
 ## Design (seguir à risca)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isB3Open, parseAwesomeFx, parseBrapi, parseBrapiFx, parseCoinGecko } from './quotes'
+import { isB3Open, parseAwesomeFx, parseBrapi, parseBrapiFx, parseCoinGecko, parseCoinGeckoFx } from './quotes'
 
 const now = new Date('2026-11-12T15:00:00Z')
 
@@ -40,6 +40,12 @@ describe('respostas das fontes', () => {
     expect(parseBrapi({ error: true, message: 'limite' }, now).size).toBe(0)
     expect(parseBrapiFx({ error: true }, now)).toBeNull()
     expect(parseAwesomeFx({}, now)).toBeNull()
+  })
+  it('câmbio pelo CoinGecko: bitcoin em reais dividido por bitcoin em dólares', () => {
+    const fx = parseCoinGeckoFx({ bitcoin: { usd: 73564, brl: 414887.8, last_updated_at: 1794495600 } }, now)
+    expect(fx).toEqual({ price: 5.6398, changePct24h: null, sourceTs: '2026-11-12T15:00:00.000Z' })
+    expect(parseCoinGeckoFx({ bitcoin: { usd: 73564 } }, now)).toBeNull()
+    expect(parseCoinGeckoFx({ status: { error_code: 429 } }, now)).toBeNull()
   })
   it('câmbio: brapi e AwesomeAPI', () => {
     expect(parseBrapiFx({ currency: [{ bidPrice: '5.05', percentageChange: '0.2', updatedAtTimestamp: '1794495600' }] }, now))
