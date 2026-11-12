@@ -1,19 +1,17 @@
 # Compila o app e publica no GitHub Pages a cada push.
 # O certo é Settings > Pages > Source = "GitHub Actions". Enquanto estiver em "Deploy from a branch",
 # o GitHub publica o código-fonte cru logo depois de cada push (página em branco); por isso este
-# workflow roda de novo quando essa publicação automática termina e põe o build no lugar.
+# workflow espera essa publicação automática terminar antes de pôr o build no lugar.
 name: Publicar no GitHub Pages
 
 on:
   push:
     branches: [claude/new-session-4gm2ci, main]
   workflow_dispatch:
-  workflow_run:
-    workflows: ['pages build and deployment']
-    types: [completed]
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -51,5 +49,16 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Espera a publicação automática do Pages terminar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 30); do
+            n=$(gh api "repos/${{ github.repository }}/actions/runs?per_page=30" \
+              --jq '[.workflow_runs[] | select(.path == "dynamic/pages/pages-build-deployment" and .status != "completed")] | length')
+            echo "publicações automáticas em andamento: $n"
+            [ "$n" = "0" ] && break
+            sleep 10
+          done
       - id: deployment
         uses: actions/deploy-pages@v4
