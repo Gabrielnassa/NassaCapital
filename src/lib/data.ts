@@ -171,8 +171,7 @@ export interface TransactionInput {
 
 /**
  * Grava um lançamento. Opcionalmente, na mesma chamada, registra a saída do dinheiro de um ativo
- * de caixa ou stablecoin (`debit`), para o patrimônio não contar duas vezes. Se veio de uma execução
- * de DCA, marca a execução como feita.
+ * de caixa ou stablecoin (`debit`), para o patrimônio não contar duas vezes.
  */
 export async function saveTransaction(args: {
   tx: TransactionInput
@@ -193,18 +192,12 @@ export async function saveTransaction(args: {
       dca_execution_id: null, notes: 'Pagamento de compra',
     })
   }
-  const { data } = check(await supabase.from('transactions').insert(batch).select('id, asset_id, type'))
-  if (args.executionId) {
-    const created = (data as { id: string; asset_id: string; type: string }[]).find((r) => r.asset_id === main.asset_id && r.type === main.type)
-    check(await supabase.from('dca_executions').update({ status: 'done', transaction_id: created?.id ?? null }).eq('id', args.executionId))
-  }
+  // A execução de DCA é marcada como feita por um gatilho no banco (sync_dca_execution).
+  check(await supabase.from('transactions').insert(batch))
 }
 
-/** Exclui o lançamento. Se ele veio de uma execução de DCA, a execução volta a ficar pendente. */
-export async function deleteTransaction(tx: Pick<Transaction, 'id' | 'dca_execution_id'>) {
-  if (tx.dca_execution_id) {
-    check(await supabase.from('dca_executions').update({ status: 'pending', transaction_id: null }).eq('id', tx.dca_execution_id))
-  }
+/** Exclui o lançamento. Se ele veio de uma execução de DCA, o banco devolve a execução para pendente. */
+export async function deleteTransaction(tx: Pick<Transaction, 'id'>) {
   check(await supabase.from('transactions').delete().eq('id', tx.id))
 }
 

@@ -1,5 +1,5 @@
 // Busca cotações (CoinGecko, brapi) e câmbio USD-BRL e grava em prices.
-// Chamada pelo pg_cron a cada 15 min (header x-cron-secret) ou pelo dono do app ("Atualizar agora").
+// Chamada pelo pg_cron a cada 5 min (header x-cron-secret) ou pelo dono do app ("Atualizar agora").
 // Erro ou limite (429) em uma fonte nunca apaga o último preço bom: só grava o que veio válido.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import { isB3Open, parseAwesomeFx, parseBrapi, parseBrapiFx, parseCoinGecko, parseCoinGeckoFx, type Quote } from './quotes.ts'

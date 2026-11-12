@@ -63,6 +63,17 @@ select id, 'buy', date '2026-11-12', 0.00724287, 400000, 0, 'BRL', 5 from assets
 select t.ok((select round(cost, 2) from v_positions where ticker = 'BTC') = round(534.42 + 0.00724287 * 400000 / 5, 2),
   'compra em BRL de ativo cotado em USD converte pelo câmbio do dia');
 
+-- ---------- execução de DCA acompanha o lançamento
+with e as (select e.id, i.asset_id from dca_executions e join dca_plan_items i on i.id = e.plan_item_id
+           join assets a on a.id = i.asset_id where a.ticker = 'ETH' order by e.scheduled_date limit 1)
+insert into transactions (asset_id, type, date, quantity, unit_price, currency, fx_rate_to_brl, dca_execution_id)
+select asset_id, 'buy', date '2026-11-12', 0.01629811, 2055.45, 'USD', 5.6, id from e;
+select t.ok((select count(*) from dca_executions e join transactions x on x.id = e.transaction_id where e.status = 'done') = 1,
+  'lançamento com execução marca a execução como feita e liga os dois');
+delete from transactions where dca_execution_id is not null;
+select t.ok((select count(*) from dca_executions where status <> 'pending' or transaction_id is not null) = 0,
+  'excluir o lançamento devolve a execução para pendente');
+
 -- ---------- metas: validação de 100% e escrita só pela função
 do $$ begin
   begin

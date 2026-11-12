@@ -13,7 +13,7 @@ run "$bin/pg_ctl -D $work/data -o \"-p $port -c listen_addresses=localhost -k $w
 q() { psql -X -q -v ON_ERROR_STOP=1 -h localhost -p "$port" -U postgres "$@"; }
 q -f "$here/00_auth_stub.sql"
 for f in "$here"/../migrations/*.sql; do
-  case "$f" in *_cron.sql) continue;; esac
+  case "$f" in *_cron.sql|*_cron_5min.sql) continue;; esac
   q -f "$f"
 done
 if [ -n "${PGTEST_KEEP:-}" ]; then trap - EXIT; echo "Postgres de teste em localhost:$port (dados em $work)"; exit 0; fi

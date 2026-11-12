@@ -24,9 +24,9 @@ function PriceStatus({ live }: { live: boolean }) {
     >
       <p className="mt-0 mb-2 text-muted">
         {live
-          ? 'Os ativos com par na Binance acompanham o preço de mercado da Binance em tempo real. Os demais usam o preço gravado pelo servidor a cada 15 minutos.'
+          ? 'Os ativos com par na Binance acompanham o preço de mercado da Binance em tempo real. Os demais usam o preço gravado pelo servidor a cada 5 minutos.'
           : at
-          ? 'Sem conexão com a Binance agora. Valem os preços gravados pelo servidor a cada 15 minutos.'
+          ? 'Sem conexão com a Binance agora. Valem os preços gravados pelo servidor a cada 5 minutos.'
           : 'Enquanto o servidor não grava as cotações, o app usa o preço do último lançamento de cada ativo.'}
       </p>
       <Button size="sm" onClick={() => refresh.mutate(undefined)} disabled={refresh.isPending}>

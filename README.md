@@ -55,4 +55,6 @@ No celular, abra o endereço e use "Adicionar à tela de início".
 
 ## Como os preços chegam
 
-O pg_cron chama a função `update-prices` a cada 15 minutos. Ela busca cripto no CoinGecko (o dia todo), B3 na brapi e o dólar (só em horário de pregão) e grava em `prices`. Se uma fonte falha ou devolve limite (429), o último preço bom continua valendo. Uma vez por dia, `daily-snapshot` grava o patrimônio por classe em `snapshots`. O navegador nunca chama as APIs de preço.
+O pg_cron chama a função `update-prices` a cada 5 minutos. Ela busca cripto e o dólar no CoinGecko (o dia todo) e B3 na brapi (só em horário de pregão) e grava em `prices`. Se uma fonte falha ou devolve limite (429), o último preço bom continua valendo. Uma vez por dia, `daily-snapshot` grava o patrimônio por classe em `snapshots`.
+
+Os ativos com par na Binance (campo "Par na Binance" em Ajustes) acompanham o preço de mercado em tempo real: o navegador abre o canal público de cotações da Binance, que não usa chave. As chaves do CoinGecko e da brapi nunca vão para o navegador.

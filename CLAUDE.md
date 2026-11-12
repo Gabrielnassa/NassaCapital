@@ -43,6 +43,8 @@ Vite + React + TypeScript strict + Tailwind v4 + vite-plugin-pwa. Radix UI só c
 - Variação do dia = soma da variação de 24h de cada ativo; não inclui a variação do dólar.
 - Preço ao vivo: `src/lib/live.ts` aplica as cotações da Binance por cima de `v_positions` e refaz a alocação com a mesma conta de `v_allocation` (mudar uma exige mudar a outra). O câmbio ao vivo é o par USDTBRL, tratando 1 USDT como US$ 1. Sem conexão, valem os preços gravados pelo servidor.
 - "Gerar plano pelo que falta": o dinheiro disponível é todo o caixa (classe `cash`) mais a parte das stablecoins acima da meta delas (sem meta, conta inteira). Compra o déficit de cada ativo que não é caixa nem stablecoin, reduz na proporção se o disponível não cobrir; o que sobra fica de reserva. Execução abaixo de US$ 10 vira semanal ou compra única.
+- A execução de DCA acompanha o lançamento por gatilho no banco (`sync_dca_execution`): criar o lançamento marca como feita, excluir devolve para pendente. O front não atualiza `dca_executions.status` para isso.
+- Preços do servidor a cada 5 minutos, que é o que cabe nas 10.000 chamadas mensais do CoinGecko Demo. Com a aba aberta, o app relê o banco a cada minuto; os pares da Binance mudam a cada segundo.
 - Editar plano muda só nome e origem do dinheiro. Para mudar valores, criar outro plano.
 - Tabela extra `settings` (moeda principal, tema).
 - B3 só é buscada em dia útil das 10h às 18h30 de Brasília (feriados não são tratados). O câmbio USD-BRL vem do CoinGecko (bitcoin em reais ÷ bitcoin em dólares), 24 horas, na mesma chamada das cotações; brapi e AwesomeAPI são reservas.
