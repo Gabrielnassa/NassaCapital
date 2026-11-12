@@ -1,11 +1,16 @@
 # Compila o app e publica no GitHub Pages a cada push.
-# Em Settings > Pages, a fonte (Source) precisa estar em "GitHub Actions".
+# O certo é Settings > Pages > Source = "GitHub Actions". Enquanto estiver em "Deploy from a branch",
+# o GitHub publica o código-fonte cru logo depois de cada push (página em branco); por isso este
+# workflow roda de novo quando essa publicação automática termina e põe o build no lugar.
 name: Publicar no GitHub Pages
 
 on:
   push:
     branches: [claude/new-session-4gm2ci, main]
   workflow_dispatch:
+  workflow_run:
+    workflows: ['pages build and deployment']
+    types: [completed]
 
 permissions:
   contents: read
