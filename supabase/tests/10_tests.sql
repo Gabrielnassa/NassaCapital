@@ -24,6 +24,8 @@ select t.ok(public.seed_initial_data(), 'seed roda na primeira vez');
 select t.ok(not public.seed_initial_data(), 'seed não duplica');
 select t.ok((select count(*) from assets) = 9, '9 ativos');
 select t.ok((select sum(percent) from v_targets_active) = 100, 'metas ativas somam 100%');
+select t.ok((select binance_symbol from assets where ticker = 'BTC') = 'BTCUSDT', 'BTC recebe o par BTCUSDT');
+select t.ok((select count(*) from assets where binance_symbol is not null) = 5 and (select binance_symbol is null from assets where ticker = 'BP'), 'só as 5 moedas conhecidas recebem par; BP fica sem');
 
 select t.ok((select round(sum(value_usd), 2) from v_positions) = 2682.60,
   'patrimônio do seed = US$ 2.682,60 (534,42 + 346,55 + 138,63 + 78,84 + 8000/5,05)');

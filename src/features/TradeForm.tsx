@@ -2,7 +2,8 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { z } from 'zod'
 import { Button, ErrorNote, Field, Input, Modal, NumberInput, Segmented, Select } from '../components/ui'
 import { convert, D, type Ccy, type Dec } from '../lib/calc/money'
-import { TX_LABEL, saveTransaction, useAssets, useBrokers, usePositions, useWrite, type Asset, type Position, type Transaction, type TxType } from '../lib/data'
+import { TX_LABEL, saveTransaction, useAssets, useBrokers, useWrite, type Asset, type Position, type Transaction, type TxType } from '../lib/data'
+import { usePortfolio } from '../lib/live-context'
 import { fmtMoney, parseNumberBR, todayISO } from '../lib/format'
 
 export interface TradePrefill {
@@ -189,7 +190,7 @@ function Form(props: { prefill: TradePrefill; assets: Asset[]; positions: Positi
 /** Formulário de lançamento. Para execução de DCA, abre já preenchido; o dono confirma ou corrige. */
 export function TradeDialog(props: { prefill: TradePrefill | null; onClose: () => void }) {
   const assets = useAssets()
-  const positions = usePositions()
+  const positions = { data: usePortfolio().positions }
   const title = props.prefill?.tx ? 'Editar lançamento' : props.prefill?.executionId ? 'Registrar compra' : 'Novo lançamento'
   return (
     <Modal open={props.prefill != null} onOpenChange={(o) => !o && props.onClose()} title={title}>

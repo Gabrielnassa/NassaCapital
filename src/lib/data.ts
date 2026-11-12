@@ -35,6 +35,8 @@ export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = { active: 'Ativo', 
 const assetRow = z.object({
   id: z.string(), ticker: z.string(), name: z.string(), class: assetClass, source,
   source_id: z.string().nullable(), quote_currency: ccy,
+  /** par na Binance para preço ao vivo, ex.: BTCUSDT */
+  binance_symbol: z.string().nullable().default(null),
 })
 export type Asset = z.infer<typeof assetRow>
 
@@ -44,7 +46,7 @@ export type Broker = z.infer<typeof brokerRow>
 const positionRow = z.object({
   asset_id: z.string(), ticker: z.string(), name: z.string(), class: assetClass, source, quote_currency: ccy,
   quantity: dec, avg_price: dec, cost: dec,
-  price: decN, price_origin: z.enum(['fixed', 'quote', 'last_tx', 'none']), price_ts: z.string().nullable(),
+  price: decN, price_origin: z.enum(['fixed', 'quote', 'last_tx', 'none', 'live']), price_ts: z.string().nullable(),
   change_pct_24h: decN, usd_brl: decN,
   value: decN, pl: decN, pl_pct: decN, value_brl: decN, value_usd: decN, cost_brl: decN, cost_usd: decN,
 })

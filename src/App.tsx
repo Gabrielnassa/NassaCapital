@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router'
 import { Shell } from './components/Shell'
 import { useSettings } from './lib/data'
+import { LiveProvider } from './lib/live-context'
 import { useSession } from './lib/session'
 import { isConfigured } from './lib/supabase'
 import { applyTheme } from './lib/theme'
@@ -22,7 +23,8 @@ function Private() {
   }, [settings.data])
 
   return (
-    <Shell>
+    <LiveProvider>
+      <Shell>
       <Routes>
         <Route path="/" element={<Hoje />} />
         <Route path="/carteira" element={<Carteira />} />
@@ -34,6 +36,7 @@ function Private() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Shell>
+    </LiveProvider>
   )
 }
 

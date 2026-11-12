@@ -20,6 +20,7 @@ const assetSchema = z
     source: z.enum(['coingecko', 'brapi', 'manual']),
     source_id: z.string().trim(),
     quote_currency: z.enum(['BRL', 'USD']),
+    binance_symbol: z.string().trim().toUpperCase().regex(/^$|^[A-Z0-9]{5,20}$/, 'Use o formato BTCUSDT.'),
   })
   .refine((a) => a.source === 'manual' || a.source_id.length > 0, { path: ['source_id'], message: 'Informe o ID do CoinGecko ou o ticker da B3.' })
 
@@ -28,6 +29,7 @@ function AssetForm(props: { asset: Asset | null; onDone: () => void }) {
   const [f, setF] = useState({
     ticker: a?.ticker ?? '', name: a?.name ?? '', class: a?.class ?? ('crypto' as AssetClass), source: a?.source ?? ('coingecko' as Source),
     source_id: a?.source_id ?? '', quote_currency: a?.quote_currency ?? ('USD' as 'BRL' | 'USD'),
+    binance_symbol: a?.binance_symbol ?? '',
   })
   const [query, setQuery] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -44,7 +46,7 @@ function AssetForm(props: { asset: Asset | null; onDone: () => void }) {
     const parsed = assetSchema.safeParse(f)
     if (!parsed.success) return setErrors(Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])))
     setErrors({})
-    const input: AssetInput = { ...parsed.data, id: a?.id, source_id: parsed.data.source === 'manual' ? null : parsed.data.source_id }
+    const input: AssetInput = { ...parsed.data, id: a?.id, source_id: parsed.data.source === 'manual' ? null : parsed.data.source_id, binance_symbol: parsed.data.binance_symbol || null }
     save.mutate(input, { onSuccess: props.onDone })
   }
 
@@ -91,6 +93,12 @@ function AssetForm(props: { asset: Asset | null; onDone: () => void }) {
           <Input className="num" value={f.source_id} onChange={(e) => set({ source_id: e.target.value })} />
         </Field>
       )}
+      {f.quote_currency === 'USD' && f.class !== 'cash' && (
+        <Field label="Par na Binance (opcional)" className="col-span-2" error={errors.binance_symbol}
+          hint="Ex.: BTCUSDT. Com o par, o preço acompanha a Binance em tempo real. Deixe vazio se o ativo não é negociado lá.">
+          <Input className="num" value={f.binance_symbol} onChange={(e) => set({ binance_symbol: e.target.value.toUpperCase() })} placeholder="BTCUSDT" />
+        </Field>
+      )}
       <Field label="Classe">
         <Select aria-label="Classe" value={f.class} onChange={(v) => set({ class: v as AssetClass })} options={CLASS_ORDER.map((c) => ({ value: c, label: CLASS_LABEL[c] }))} />
       </Field>
@@ -129,7 +137,7 @@ export function Ajustes() {
         <Panel flush title="Ativos" action={<Button size="sm" onClick={() => setAssetDialog({ asset: null })}><Plus size={16} />Adicionar</Button>}>
           <div className="overflow-x-auto">
             <table className="tbl">
-              <thead><tr><th>Ticker</th><th className="max-md:hidden">Nome</th><th>Classe</th><th className="max-md:hidden">Fonte</th><th>ID na fonte</th><th className="max-md:hidden">Moeda</th><th /></tr></thead>
+              <thead><tr><th>Ticker</th><th className="max-md:hidden">Nome</th><th>Classe</th><th className="max-md:hidden">Fonte</th><th>ID na fonte</th><th className="max-md:hidden">Binance</th><th className="max-md:hidden">Moeda</th><th /></tr></thead>
               <tbody>
                 {(assets.data ?? []).map((a) => (
                   <tr key={a.id} className="row">
@@ -138,6 +146,7 @@ export function Ajustes() {
                     <td>{CLASS_LABEL[a.class]}</td>
                     <td className="max-md:hidden">{SOURCE_LABEL[a.source]}</td>
                     <td className="num text-muted">{a.source_id ?? '—'}</td>
+                    <td className="num text-muted max-md:hidden">{a.binance_symbol ?? '—'}</td>
                     <td className="max-md:hidden">{a.quote_currency === 'USD' ? 'US$' : 'R$'}</td>
                     <td className="r">
                       <span className="inline-flex gap-1">

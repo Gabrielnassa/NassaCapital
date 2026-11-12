@@ -18,6 +18,7 @@ Vite + React + TypeScript strict + Tailwind v4 + vite-plugin-pwa. Radix UI só c
 - `src/lib/calc/` — contas puras e testadas (câmbio, preço médio, simulador de aporte, DCA). Nenhuma conta dentro de componente.
 - `src/lib/format/` — formato brasileiro (R$ 1.234,56 · 12,5%), sempre por aqui.
 - `src/lib/data.ts` — única porta para o Supabase: leitura com Zod, numeric vira Decimal, escritas.
+- `src/lib/live.ts` e `live-context.tsx` — preço ao vivo da Binance; as telas leem a carteira por `usePortfolio()`.
 - `src/components/ui.tsx` — componentes; `src/index.css` — tokens.
 - `src/routes/` — telas; `src/features/` — formulário de lançamento e derivações de tela.
 - `supabase/migrations/` — schema, RLS, views `v_positions` e `v_allocation`, seed, cron.
@@ -40,6 +41,7 @@ Vite + React + TypeScript strict + Tailwind v4 + vite-plugin-pwa. Radix UI só c
 - "Pagar com": ao registrar uma compra, o app pode lançar junto a saída do caixa ou da stablecoin, para o patrimônio não contar duas vezes. `dca_plans.funding_asset_id` guarda de onde sai o dinheiro do plano.
 - `prices` tem uma linha por ativo ou por par de câmbio (`fx_pair = 'USD-BRL'`). Sem cotação gravada, a view usa o preço do último lançamento (`price_origin = 'last_tx'`) e a tela avisa.
 - Variação do dia = soma da variação de 24h de cada ativo; não inclui a variação do dólar.
+- Preço ao vivo: `src/lib/live.ts` aplica as cotações da Binance por cima de `v_positions` e refaz a alocação com a mesma conta de `v_allocation` (mudar uma exige mudar a outra). O câmbio ao vivo é o par USDTBRL, tratando 1 USDT como US$ 1. Sem conexão, valem os preços gravados pelo servidor.
 - "Gerar plano pelo que falta": usa o caixa (classe `cash`), compra o déficit inteiro de cada ativo que não é caixa nem stablecoin, reduz na proporção se o caixa não cobrir; o que sobra fica de reserva. Execução abaixo de US$ 10 vira semanal ou compra única.
 - Editar plano muda só nome e origem do dinheiro. Para mudar valores, criar outro plano.
 - Tabela extra `settings` (moeda principal, tema).
@@ -62,7 +64,8 @@ Referência: Mercury, Linear, terminal de corretora. Ferramenta de trabalho dens
 
 - RLS em todas as tabelas; `prices` e `snapshots` só são escritas pelas Edge Functions (service role); `targets` só pela função `set_targets`.
 - Nenhuma chave de API no front nem no git. As chaves do CoinGecko e da brapi ficam em secrets das Edge Functions. O segredo do cron é gerado no banco e fica no Vault; as funções conferem por `is_cron_secret`. As variáveis `VITE_*` são públicas por natureza.
-- Preços sempre pelo servidor, nunca do navegador. Cripto é identificada pelo ID do CoinGecko, nunca só pelo ticker.
+- Chamadas que usam chave (CoinGecko, brapi) são sempre pelo servidor, nunca do navegador. Cripto é identificada pelo ID do CoinGecko, nunca só pelo ticker.
+- Exceção pedida pelo dono em 12/11/2026: o navegador abre um WebSocket público da Binance (sem chave) para preço ao vivo. O par (`assets.binance_symbol`, ex.: BTCUSDT) é explícito por ativo, nunca deduzido do ticker.
 
 ## Estado
 

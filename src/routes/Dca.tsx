@@ -7,10 +7,11 @@ import { TradeDialog, type TradePrefill } from '../features/TradeForm'
 import { addDays, generateExecutions, generatePlanFromDeficit, type Frequency, type PlannedExecution } from '../lib/calc/dca'
 import { D, sum, type Ccy } from '../lib/calc/money'
 import {
-  FREQ_LABEL, PLAN_STATUS_LABEL, createPlan, deletePlan, setExecutionStatus, updatePlan, useAllocation, useAssets, usePlans, useWrite,
+  FREQ_LABEL, PLAN_STATUS_LABEL, createPlan, deletePlan, setExecutionStatus, updatePlan, useAssets, usePlans, useWrite,
   type Allocation, type Asset, type Execution, type Plan, type PlanInput,
 } from '../lib/data'
 import { fmtDate, fmtDayMonth, fmtMoney, parseNumberBR, todayISO } from '../lib/format'
+import { usePortfolio } from '../lib/live-context'
 
 const NONE = 'none'
 const MIN_ORDER_USD = D(10)
@@ -319,7 +320,7 @@ function EditPlan(props: { plan: Plan; assets: Asset[]; onDone: () => void }) {
 export function Dca() {
   const plans = usePlans()
   const assets = useAssets()
-  const allocation = useAllocation()
+  const allocation = { data: usePortfolio().allocation }
   const remove = useWrite(deletePlan)
   const [draft, setDraft] = useState<PlanDraft | null>(null)
   const [trade, setTrade] = useState<TradePrefill | null>(null)

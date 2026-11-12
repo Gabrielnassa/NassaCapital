@@ -4,7 +4,8 @@ import { Link } from 'react-router'
 import { Badge, Button, Delta, EmptyState, ErrorNote, PageHeader, Panel } from '../components/ui'
 import { totals } from '../features/portfolio'
 import { sum, ZERO, type Ccy, type Dec } from '../lib/calc/money'
-import { CLASS_LABEL, CLASS_ORDER, DEFAULT_SETTINGS, pick, useAllocation, usePositions, useSettings, type Allocation, type Position } from '../lib/data'
+import { CLASS_LABEL, CLASS_ORDER, DEFAULT_SETTINGS, pick, useSettings, type Allocation, type Position } from '../lib/data'
+import { usePortfolio } from '../lib/live-context'
 import { fmtAmount, fmtMoney, fmtPct, fmtPctSigned, fmtPrice, fmtQty } from '../lib/format'
 
 interface Row {
@@ -35,8 +36,9 @@ function compare(a: Dec | string | null | undefined, b: Dec | string | null | un
 }
 
 export function Carteira() {
-  const positions = usePositions()
-  const allocation = useAllocation()
+  const portfolio = usePortfolio()
+  const positions = { data: portfolio.positions, error: portfolio.error }
+  const allocation = { data: portfolio.allocation, error: null }
   const settings = useSettings()
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: 'brl', desc: true })
 

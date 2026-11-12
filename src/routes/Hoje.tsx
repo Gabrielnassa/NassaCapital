@@ -5,10 +5,11 @@ import { Button, Delta, EmptyState, ErrorNote, Panel, Popover } from '../compone
 import { openExecutions, totals, type OpenExecution } from '../features/portfolio'
 import { TradeDialog, type TradePrefill } from '../features/TradeForm'
 import { sum, ZERO, type Ccy } from '../lib/calc/money'
-import { DEFAULT_SETTINGS, pick, refreshPrices, seedInitialData, useAssets, usePlans, usePositions, usePriceStatus, useSettings, useWrite } from '../lib/data'
+import { DEFAULT_SETTINGS, pick, refreshPrices, seedInitialData, useAssets, usePlans, usePriceStatus, useSettings, useWrite } from '../lib/data'
+import { usePortfolio } from '../lib/live-context'
 import { fmtDateTime, fmtDayMonth, fmtMoney, fmtQty, todayISO } from '../lib/format'
 
-function PriceStatus() {
+function PriceStatus({ live }: { live: boolean }) {
   const status = usePriceStatus()
   const refresh = useWrite(refreshPrices)
   const at = status.data?.fetchedAt
@@ -17,13 +18,15 @@ function PriceStatus() {
       align="end"
       trigger={
         <button type="button" className="num cursor-pointer rounded-sm border-0 bg-transparent p-0 text-xs text-muted underline decoration-border-strong underline-offset-2 hover:text-text">
-          {at ? `Preços de ${fmtDateTime(at)}` : 'Sem cotação ainda'}
+          {live ? 'Binance ao vivo' : at ? `Preços de ${fmtDateTime(at)}` : 'Sem cotação ainda'}
         </button>
       }
     >
       <p className="mt-0 mb-2 text-muted">
-        {at
-          ? 'Os preços são buscados pelo servidor a cada 15 minutos: cripto o dia todo, B3 e dólar só no pregão.'
+        {live
+          ? 'Os ativos com par na Binance acompanham o preço de mercado da Binance em tempo real. Os demais usam o preço gravado pelo servidor a cada 15 minutos.'
+          : at
+          ? 'Sem conexão com a Binance agora. Valem os preços gravados pelo servidor a cada 15 minutos.'
           : 'Enquanto o servidor não grava as cotações, o app usa o preço do último lançamento de cada ativo.'}
       </p>
       <Button size="sm" onClick={() => refresh.mutate(undefined)} disabled={refresh.isPending}>
@@ -76,7 +79,8 @@ function ExecutionList(props: { title: string; rows: OpenExecution[]; main: Ccy;
 }
 
 export function Hoje() {
-  const positions = usePositions()
+  const portfolio = usePortfolio()
+  const positions = { data: portfolio.positions, error: portfolio.error }
   const plans = usePlans()
   const assets = useAssets()
   const settings = useSettings()
@@ -133,7 +137,7 @@ export function Hoje() {
           ) : (
             <div className="num text-sm text-muted">—</div>
           )}
-          <PriceStatus />
+          <PriceStatus live={portfolio.live} />
         </div>
       </header>
 

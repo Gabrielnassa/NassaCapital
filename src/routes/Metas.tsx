@@ -3,7 +3,8 @@ import { useMemo, useState } from 'react'
 import { Badge, Button, ErrorNote, Field, NumberInput, PageHeader, Panel, Segmented, Tabs, TargetBar } from '../components/ui'
 import { simulateContribution } from '../lib/calc/contribution'
 import { D, sum, ZERO, type Ccy, type Dec } from '../lib/calc/money'
-import { CLASS_LABEL, CLASS_ORDER, DEFAULT_SETTINGS, pick, setTargets, useAllocation, useAssets, useSettings, useWrite, type Allocation, type AssetClass } from '../lib/data'
+import { CLASS_LABEL, CLASS_ORDER, DEFAULT_SETTINGS, pick, setTargets, useAssets, useSettings, useWrite, type Allocation, type AssetClass } from '../lib/data'
+import { usePortfolio } from '../lib/live-context'
 import { fmtMoney, fmtPct, parseNumberBR } from '../lib/format'
 
 interface EditorRow {
@@ -125,7 +126,8 @@ function Simulator(props: { allocation: Allocation[]; main: Ccy; usdBrl: Dec | n
 }
 
 export function Metas() {
-  const allocation = useAllocation()
+  const portfolio = usePortfolio()
+  const allocation = { data: portfolio.allocation, error: portfolio.error }
   const assets = useAssets()
   const settings = useSettings()
   const [tab, setTab] = useState('asset')
