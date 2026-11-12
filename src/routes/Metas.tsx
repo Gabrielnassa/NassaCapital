@@ -5,7 +5,7 @@ import { simulateContribution } from '../lib/calc/contribution'
 import { D, sum, ZERO, type Ccy, type Dec } from '../lib/calc/money'
 import { CLASS_LABEL, CLASS_ORDER, DEFAULT_SETTINGS, pick, setTargets, useAssets, useSettings, useWrite, type Allocation, type AssetClass } from '../lib/data'
 import { usePortfolio } from '../lib/live-context'
-import { fmtMoney, fmtPct, parseNumberBR } from '../lib/format'
+import { fmtMoney, fmtPct, parseMoneyBR, parseNumberBR } from '../lib/format'
 
 interface EditorRow {
   key: string
@@ -74,7 +74,7 @@ function Simulator(props: { allocation: Allocation[]; main: Ccy; usdBrl: Dec | n
   const [raw, setRaw] = useState('')
   const [ccy, setCcy] = useState<Ccy>(props.main)
   const other: Ccy = ccy === 'BRL' ? 'USD' : 'BRL'
-  const amount = parseNumberBR(raw)
+  const amount = parseMoneyBR(raw)
 
   const result = useMemo(() => {
     if (!amount || !D(amount).gt(0)) return null

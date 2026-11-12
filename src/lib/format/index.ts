@@ -51,6 +51,17 @@ export const fmtDateTime = (iso: string) => dateTime.format(new Date(iso)).repla
 export const todayISO = (now = new Date()) =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(now)
 
+/**
+ * Lê um valor em dinheiro ou preço. Além do que parseNumberBR aceita, entende o ponto como separador
+ * de milhar quando ele vem em grupos de três ("100.000" = cem mil, "1.234.567"). Só para campos de
+ * valor: em quantidade, "4.187" continua sendo quatro vírgula cento e oitenta e sete.
+ */
+export function parseMoneyBR(input: string): string | null {
+  const s = input.trim().replace(/\s/g, '')
+  if (/^[1-9]\d{0,2}(\.\d{3})+$/.test(s)) return s.replace(/\./g, '')
+  return parseNumberBR(s)
+}
+
 /** Lê número digitado no formato brasileiro ("1.234,56") ou com ponto decimal ("1234.56"). */
 export function parseNumberBR(input: string): string | null {
   const s = input.trim().replace(/\s/g, '')

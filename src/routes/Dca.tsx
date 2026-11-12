@@ -10,7 +10,7 @@ import {
   FREQ_LABEL, PLAN_STATUS_LABEL, createPlan, deletePlan, setExecutionStatus, updatePlan, useAssets, usePlans, useWrite,
   type Allocation, type Asset, type Execution, type Plan, type PlanInput,
 } from '../lib/data'
-import { fmtDate, fmtDayMonth, fmtMoney, parseNumberBR, todayISO } from '../lib/format'
+import { fmtDate, fmtDayMonth, fmtMoney, parseMoneyBR, parseNumberBR, todayISO } from '../lib/format'
 import { usePortfolio } from '../lib/live-context'
 
 const NONE = 'none'
@@ -63,7 +63,7 @@ function draftFromDeficit(allocation: Allocation[], assets: Asset[]): PlanDraft 
 function buildPlan(d: PlanDraft): { input?: PlanInput; error?: string; preview: (PlannedExecution[] | null)[] } {
   const duration = Number(d.duration)
   const durationOk = Number.isInteger(duration) && duration >= 1 && duration <= 365
-  const total = parseNumberBR(d.total)
+  const total = parseMoneyBR(d.total)
   const needsTotal = d.items.some((i) => i.mode === 'percent')
   const preview = d.items.map((i) => {
     const v = parseNumberBR(i.value)

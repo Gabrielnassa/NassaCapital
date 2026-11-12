@@ -37,6 +37,8 @@ const assetRow = z.object({
   source_id: z.string().nullable(), quote_currency: ccy,
   /** par na Binance para preço ao vivo, ex.: BTCUSDT */
   binance_symbol: z.string().nullable().default(null),
+  /** multiplicador do simulador de cenário; nulo = padrão do app */
+  btc_beta: decN.default(null),
 })
 export type Asset = z.infer<typeof assetRow>
 
@@ -245,9 +247,13 @@ export async function setExecutionStatus(args: { id: string; status: 'pending' |
   check(await supabase.from('dca_executions').update({ status: args.status }).eq('id', args.id))
 }
 
-export type AssetInput = Omit<Asset, 'id'> & { id?: string }
+export type AssetInput = Omit<Asset, 'id' | 'btc_beta'> & { id?: string }
 export async function saveAsset({ id, ...fields }: AssetInput) {
   check(id ? await supabase.from('assets').update(fields).eq('id', id) : await supabase.from('assets').insert(fields))
+}
+/** Grava os multiplicadores do simulador (nulo volta ao padrão do app). */
+export async function saveBetas(items: { id: string; btc_beta: string | null }[]) {
+  for (const item of items) check(await supabase.from('assets').update({ btc_beta: item.btc_beta }).eq('id', item.id))
 }
 export async function deleteAsset(id: string) {
   const res = await supabase.from('assets').delete().eq('id', id)

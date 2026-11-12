@@ -137,11 +137,26 @@ h3 {
   background: var(--sunken);
 }
 .tbl td.group {
-  height: 30px;
+  height: 32px;
   background: var(--sunken);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
+  color: var(--text);
+}
+/* Segundo nível de agrupamento (ex.: Altcoins dentro de Cripto). */
+.tbl td.subgroup {
+  height: 28px;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--muted);
+  border-bottom: 1px solid var(--border-strong);
+}
+.tbl tr.nested td:first-child {
+  padding-left: 20px;
+}
+.tbl tr.total td {
+  border-top: 1px solid var(--border-strong);
+  font-weight: 600;
 }
 
 @media (prefers-reduced-motion: reduce) {

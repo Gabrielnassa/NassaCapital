@@ -4,7 +4,7 @@ import type { Allocation, Asset, Position } from './data'
 import { allocationFromPositions, applyLive, parseTickerMessage, streamUrl, type LiveQuote } from './live'
 
 const asset = (id: string, binance_symbol: string | null, quote: 'USD' | 'BRL' = 'USD'): Asset =>
-  ({ id, ticker: id, name: id, class: 'crypto', source: 'coingecko', source_id: id, quote_currency: quote, binance_symbol })
+  ({ id, ticker: id, name: id, class: 'crypto', source: 'coingecko', source_id: id, quote_currency: quote, binance_symbol, btc_beta: null })
 
 const position = (id: string, quantity: string, avg: string, price: string | null, quote: 'USD' | 'BRL' = 'USD', cls: Position['class'] = 'crypto'): Position => {
   const q = D(quantity), cost = q.times(avg), value = price ? q.times(price) : null

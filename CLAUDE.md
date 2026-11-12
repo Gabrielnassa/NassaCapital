@@ -15,7 +15,7 @@ Vite + React + TypeScript strict + Tailwind v4 + vite-plugin-pwa. Radix UI só c
 
 ## Onde fica cada coisa
 
-- `src/lib/calc/` — contas puras e testadas (câmbio, preço médio, simulador de aporte, DCA). Nenhuma conta dentro de componente.
+- `src/lib/calc/` — contas puras e testadas (câmbio, preço médio, simulador de aporte, DCA, agrupamento da carteira, cenário do BTC). Nenhuma conta dentro de componente.
 - `src/lib/format/` — formato brasileiro (R$ 1.234,56 · 12,5%), sempre por aqui.
 - `src/lib/data.ts` — única porta para o Supabase: leitura com Zod, numeric vira Decimal, escritas.
 - `src/lib/live.ts` e `live-context.tsx` — preço ao vivo da Binance; as telas leem a carteira por `usePortfolio()`.
@@ -48,7 +48,9 @@ Vite + React + TypeScript strict + Tailwind v4 + vite-plugin-pwa. Radix UI só c
 - Editar plano muda só nome e origem do dinheiro. Para mudar valores, criar outro plano.
 - Tabela extra `settings` (moeda principal, tema).
 - B3 só é buscada em dia útil das 10h às 18h30 de Brasília (feriados não são tratados). O câmbio USD-BRL vem do CoinGecko (bitcoin em reais ÷ bitcoin em dólares), 24 horas, na mesma chamada das cotações; brapi e AwesomeAPI são reservas.
-- Número digitado: vírgula é decimal ("1.234,56"); sem vírgula, o ponto é decimal ("0.5").
+- Número digitado: vírgula é decimal ("1.234,56"); sem vírgula, o ponto é decimal ("0.5"). Em campos de valor e preço (`parseMoneyBR`), ponto em grupos de três é milhar ("100.000" = cem mil); em quantidade, não.
+- Carteira em dois níveis (`src/lib/calc/segments.ts`): Cripto (Bitcoin, Altcoins, Stablecoins), Bolsa (Ações, FIIs, ETFs) e Caixa. Bitcoin é reconhecido pelo ID do CoinGecko. As classes do banco não mudaram.
+- Simulação (`src/lib/calc/scenario.ts`): cada ativo se move multiplicador × variação do BTC, com piso de −100%. Padrão: Bitcoin 1, altcoin 1,5, demais 0; o dono edita por ativo (`assets.btc_beta`). O câmbio fica fixo. A tela sempre diz que é hipótese, não previsão.
 
 ## Design (seguir à risca)
 

@@ -1,6 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { Badge, Button, Delta, EmptyState, ErrorNote, Field, Input, Modal, NumberInput, Panel, Popover, ProgressBar, Segmented, Select, Tabs, TargetBar } from '../components/ui'
+import { Badge, Button, Delta, EmptyState, ErrorNote, Field, Input, Modal, NumberInput, Panel, Popover, ProgressBar, SegmentBar, Segmented, Select, Stats, Tabs, TargetBar } from '../components/ui'
 import { D } from '../lib/calc/money'
 import { fmtMoney, fmtPct, fmtPrice, fmtQty } from '../lib/format'
 import { applyTheme } from '../lib/theme'
@@ -96,12 +96,26 @@ export function Design() {
         <div><Segmented aria-label="Moeda" value={seg} onChange={setSeg} options={[{ value: 'BRL', label: 'R$' }, { value: 'USD', label: 'US$' }]} /></div>
       </Section>
 
+      <Section title="Números-chave e composição">
+        <Stats items={[
+          { label: 'Patrimônio', value: fmtMoney(D('14060.13'), 'BRL'), sub: fmtMoney(D('2517.93'), 'USD') },
+          { label: 'Custo', value: fmtMoney(D('14068.02'), 'BRL'), sub: 'pelo preço médio' },
+          { label: 'Lucro ou prejuízo', value: <Delta value={D('-7.89')} ccy="BRL" />, sub: <Delta value={D('-0.06')} /> },
+          { label: 'Hoje', value: <Delta value={D('184.2')} ccy="BRL" />, sub: <Delta value={D('1.33')} /> },
+        ]} />
+        <SegmentBar aria-label="Composição da carteira" segments={[
+          { label: 'Bitcoin', pct: D('22.2') }, { label: 'Altcoins', pct: D('23.5') }, { label: 'Stablecoins', pct: D('44.3') },
+          { label: 'Ações', pct: D('6') }, { label: 'Caixa', pct: D('4'), muted: true },
+        ]} />
+      </Section>
+
       <Section title="Tabela">
         <Panel flush className="overflow-x-auto">
           <table className="tbl">
             <thead><tr><th>Ativo</th><th className="r">Qtd</th><th className="r">Preço médio</th><th className="r">Preço</th><th className="r">Valor R$</th><th className="r">L/P %</th><th className="r">% atual</th><th className="r">% meta</th></tr></thead>
             <tbody>
               <tr><td className="group" colSpan={8}>Cripto</td></tr>
+              <tr className="nested"><td className="subgroup" colSpan={8}>Altcoins</td></tr>
               {SAMPLE.map((r) => (
                 <tr key={r.t} className="row">
                   <td className="font-semibold">{r.t}</td>

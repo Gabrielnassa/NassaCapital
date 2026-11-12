@@ -292,6 +292,52 @@ export function TargetBar(props: { current: Dec; target: Dec | null; max: Dec; c
   )
 }
 
+/** Faixa de números-chave: rótulo pequeno, valor em mono. Sem cards: só divisórias de 1px. */
+export function Stats(props: { items: { label: string; value: ReactNode; sub?: ReactNode }[] }) {
+  return (
+    <dl className="m-0 grid grid-cols-2 overflow-hidden rounded-md border border-border bg-surface md:auto-cols-fr md:grid-flow-col md:grid-cols-none">
+      {props.items.map((item) => (
+        <div key={item.label} className="-mb-px -ml-px border-b border-l border-border px-3 py-2">
+          <dt className="text-xs font-medium text-muted">{item.label}</dt>
+          <dd className="num m-0 text-base leading-snug font-medium">{item.value}</dd>
+          {item.sub != null && <dd className="num m-0 text-xs text-muted">{item.sub}</dd>}
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+/**
+ * Composição da carteira numa barra só, com legenda em texto. Uma única cor, em tons que vão
+ * clareando; a parte sem tom (muted) é a que não é investimento, como caixa.
+ */
+export function SegmentBar(props: { segments: { label: string; pct: Dec; muted?: boolean }[]; 'aria-label': string }) {
+  const shown = props.segments.filter((s) => s.pct.gt(0))
+  const tones = [100, 68, 44, 28, 18]
+  const colored = shown.map((s, i) => {
+    const tone = tones[Math.min(shown.slice(0, i).filter((x) => !x.muted).length, tones.length - 1)]
+    return { ...s, color: s.muted ? 'var(--faint)' : `color-mix(in srgb, var(--accent) ${tone}%, var(--sunken))` }
+  })
+  return (
+    <div>
+      <div role="img" aria-label={`${props['aria-label']}: ${colored.map((s) => `${s.label} ${fmtPct(s.pct)}`).join(', ')}`} className="flex h-2 w-full gap-px overflow-hidden rounded-sm bg-sunken">
+        {colored.map((s) => (
+          <div key={s.label} style={{ width: `${s.pct.toNumber()}%`, background: s.color }} />
+        ))}
+      </div>
+      <ul className="m-0 mt-2 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-xs">
+        {colored.map((s) => (
+          <li key={s.label} className="inline-flex items-center gap-1.5">
+            <span className="block size-2 rounded-sm" style={{ background: s.color }} />
+            <span className="text-muted">{s.label}</span>
+            <span className="num font-medium">{fmtPct(s.pct)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 /** Barra de progresso simples (executado vs planejado). */
 export function ProgressBar(props: { value: Dec; total: Dec; label: string }) {
   const pct = props.total.gt(0) ? Math.min(props.value.div(props.total).times(100).toNumber(), 100) : 0

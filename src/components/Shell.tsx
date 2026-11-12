@@ -1,6 +1,9 @@
-import { ArrowLeftRight, CalendarCheck, Menu, Repeat, Settings, Target, Wallet, type LucideIcon } from 'lucide-react'
+import { ArrowLeftRight, CalendarCheck, Menu, Repeat, Settings, Target, TrendingUp, Wallet, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router'
+import { usePriceStatus } from '../lib/data'
+import { fmtDateTime } from '../lib/format'
+import { usePortfolio } from '../lib/live-context'
 import { cx } from './cx'
 
 interface Item {
@@ -13,10 +16,27 @@ const ALL: Item[] = [
   { to: '/carteira', label: 'Carteira', icon: Wallet },
   { to: '/metas', label: 'Metas', icon: Target },
   { to: '/dca', label: 'DCA', icon: Repeat },
+  { to: '/simulacao', label: 'Simulação', icon: TrendingUp },
   { to: '/lancamentos', label: 'Lançamentos', icon: ArrowLeftRight },
   { to: '/ajustes', label: 'Ajustes', icon: Settings },
 ]
 const MOBILE: Item[] = [ALL[0], ALL[1], ALL[3], { to: '/mais', label: 'Mais', icon: Menu }]
+
+/** De onde vêm os preços agora: Binance ao vivo ou o último registro do servidor. */
+function PriceSource() {
+  const { live } = usePortfolio()
+  const status = usePriceStatus()
+  const at = status.data?.fetchedAt
+  return (
+    <div className="mt-auto px-2 text-xs text-muted">
+      <div className="flex items-center gap-1.5">
+        <span className={cx('block size-1.5 rounded-sm', live ? 'bg-accent' : 'bg-faint')} />
+        {live ? 'Binance ao vivo' : 'Preços do servidor'}
+      </div>
+      {at && <div className="num mt-0.5 text-faint">{live ? 'demais ativos: ' : ''}{fmtDateTime(at)}</div>}
+    </div>
+  )
+}
 
 /** Barra lateral estreita no desktop; barra inferior com 4 itens no celular. */
 export function Shell({ children }: { children: ReactNode }) {
@@ -40,6 +60,7 @@ export function Shell({ children }: { children: ReactNode }) {
             {i.label}
           </NavLink>
         ))}
+        <PriceSource />
       </nav>
 
       <main className="mx-auto max-w-6xl px-4 pt-4 pb-20 md:px-6 md:pt-5 md:pb-8">{children}</main>

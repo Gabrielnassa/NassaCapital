@@ -1,9 +1,10 @@
-import { ArrowLeftRight, ChevronRight, Settings, Target } from 'lucide-react'
+import { ArrowLeftRight, ChevronRight, Settings, Target, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router'
 import { PageHeader, Panel } from '../components/ui'
 
 const LINKS = [
   { to: '/metas', label: 'Metas e simulador de aporte', icon: Target },
+  { to: '/simulacao', label: 'Simulação: se o Bitcoin chegar a…', icon: TrendingUp },
   { to: '/lancamentos', label: 'Lançamentos', icon: ArrowLeftRight },
   { to: '/ajustes', label: 'Ajustes', icon: Settings },
 ]
