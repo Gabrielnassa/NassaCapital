@@ -55,8 +55,8 @@ function draftFromDeficit(allocation: Allocation[], assets: Asset[]): PlanDraft 
     funding: assets.find((a) => a.class === 'stable')?.id ?? NONE,
     items: plan.items.map((i) => ({ asset_id: i.id, mode: 'fixed' as const, value: toInput(i.fixedAmount), frequency: i.frequency })),
     note: plan.items.length
-      ? `Caixa disponível ${fmtMoney(plan.cash, 'USD')}. O plano usa ${fmtMoney(plan.total, 'USD')} e sobram ${fmtMoney(plan.reserve, 'USD')} de reserva. Nada é vendido.`
-      : 'Não há caixa disponível ou nenhum ativo está abaixo da meta.',
+      ? `Disponível ${fmtMoney(plan.cash, 'USD')} (caixa mais o USDT acima da meta). O plano usa ${fmtMoney(plan.total, 'USD')} e sobram ${fmtMoney(plan.reserve, 'USD')}. Nada é vendido.`
+      : 'Não há dinheiro disponível (caixa ou USDT acima da meta) ou nenhum ativo está abaixo da meta.',
   }
 }
 

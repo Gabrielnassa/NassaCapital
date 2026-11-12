@@ -73,7 +73,7 @@ export function splitDue<T extends DueExecution>(executions: T[], today: string)
 export interface DeficitHolding extends Holding {
   /** caixa e stablecoin não entram como compra: são a origem e a reserva do plano */
   isCashLike: boolean
-  /** true só para caixa (classe cash): é o dinheiro disponível para o plano */
+  /** true só para caixa (classe cash), que fica inteiro disponível para o plano */
   isCash: boolean
 }
 
@@ -88,15 +88,18 @@ export interface GeneratedItem {
 export interface GeneratedPlan {
   items: GeneratedItem[]
   total: Dec
+  /** dinheiro disponível: caixa mais o que as stablecoins têm acima da própria meta */
   cash: Dec
-  /** quanto do caixa sobra depois do plano */
+  /** quanto do disponível sobra depois do plano */
   reserve: Dec
 }
 
 /**
- * "Gerar plano pelo que falta": pega o caixa disponível, calcula o que falta de cada ativo para a
- * meta (sobre o patrimônio atual) e monta os itens. Se o caixa não cobre tudo, reduz na mesma
- * proporção. Execução abaixo do mínimo de ordem vira semanal; se ainda ficar abaixo, compra única.
+ * "Gerar plano pelo que falta": pega o dinheiro disponível, calcula o que falta de cada ativo para
+ * a meta (sobre o patrimônio atual) e monta os itens. Disponível = todo o caixa + a parte das
+ * stablecoins que passa da meta delas (stablecoin sem meta conta inteira); a parte dentro da meta é
+ * reserva e não é gasta. Se o disponível não cobre tudo, reduz na mesma proporção. Execução abaixo
+ * do mínimo de ordem vira semanal; se ainda ficar abaixo, compra única.
  */
 export function generatePlanFromDeficit(
   holdings: DeficitHolding[],
@@ -104,7 +107,13 @@ export function generatePlanFromDeficit(
   minOrder: Dec,
 ): GeneratedPlan {
   const total = sum(holdings.map((h) => h.value))
-  const cash = sum(holdings.filter((h) => h.isCash).map((h) => h.value))
+  const cash = sum(
+    holdings.filter((h) => h.isCashLike).map((h) => {
+      if (h.isCash) return h.value
+      const excess = h.value.minus((h.targetPct ?? ZERO).div(100).times(total))
+      return excess.gt(0) ? excess : ZERO
+    }),
+  )
   const gaps = deficits(holdings.filter((h) => !h.isCashLike), total)
   const wanted = sum([...gaps.values()])
   const scale = wanted.gt(cash) && wanted.gt(0) ? cash.div(wanted) : new Decimal(1)

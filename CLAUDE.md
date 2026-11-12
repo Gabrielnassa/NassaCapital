@@ -30,7 +30,7 @@ Vite + React + TypeScript strict + Tailwind v4 + vite-plugin-pwa. Radix UI só c
 2. Cada lançamento guarda moeda original e câmbio do dia. `fx_rate_to_brl` é sempre R$ por US$ 1, mesmo em lançamento em reais. Totais usam o câmbio atual.
 3. Simulador de aporte: alvo sobre (patrimônio + aporte), só ativos abaixo da meta, divisão proporcional ao que falta, nunca sugere venda, soma exatamente o aporte (centavos restantes vão para os maiores déficits).
 4. DCA: valor por execução = total × % ÷ nº de execuções. Semanal = a cada 7 dias, `floor(duração / 7)` vezes. Execução não feita continua pendente e aparece em "Atrasadas". Execuções são geradas ao criar o plano.
-5. Marcar execução como feita abre o formulário de compra preenchido; o dono confirma ou corrige.
+5. Marcar execução como feita abre o formulário de compra com o valor previsto. O dono informa o total pago e a quantidade recebida, como no comprovante; o preço unitário é calculado (total ÷ quantidade), nunca digitado, e a quantidade nunca vem pré-preenchida com estimativa.
 6. IR (fase 2): limites e alíquotas em tabela editável, com o aviso "confira com um contador".
 
 ## Decisões tomadas onde o pedido era ambíguo
@@ -42,7 +42,7 @@ Vite + React + TypeScript strict + Tailwind v4 + vite-plugin-pwa. Radix UI só c
 - `prices` tem uma linha por ativo ou por par de câmbio (`fx_pair = 'USD-BRL'`). Sem cotação gravada, a view usa o preço do último lançamento (`price_origin = 'last_tx'`) e a tela avisa.
 - Variação do dia = soma da variação de 24h de cada ativo; não inclui a variação do dólar.
 - Preço ao vivo: `src/lib/live.ts` aplica as cotações da Binance por cima de `v_positions` e refaz a alocação com a mesma conta de `v_allocation` (mudar uma exige mudar a outra). O câmbio ao vivo é o par USDTBRL, tratando 1 USDT como US$ 1. Sem conexão, valem os preços gravados pelo servidor.
-- "Gerar plano pelo que falta": usa o caixa (classe `cash`), compra o déficit inteiro de cada ativo que não é caixa nem stablecoin, reduz na proporção se o caixa não cobrir; o que sobra fica de reserva. Execução abaixo de US$ 10 vira semanal ou compra única.
+- "Gerar plano pelo que falta": o dinheiro disponível é todo o caixa (classe `cash`) mais a parte das stablecoins acima da meta delas (sem meta, conta inteira). Compra o déficit de cada ativo que não é caixa nem stablecoin, reduz na proporção se o disponível não cobrir; o que sobra fica de reserva. Execução abaixo de US$ 10 vira semanal ou compra única.
 - Editar plano muda só nome e origem do dinheiro. Para mudar valores, criar outro plano.
 - Tabela extra `settings` (moeda principal, tema).
 - B3 só é buscada em dia útil das 10h às 18h30 de Brasília (feriados não são tratados). O câmbio USD-BRL vem do CoinGecko (bitcoin em reais ÷ bitcoin em dólares), 24 horas, na mesma chamada das cotações; brapi e AwesomeAPI são reservas.

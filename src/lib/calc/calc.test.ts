@@ -170,6 +170,30 @@ describe('gerar plano pelo que falta', () => {
     expect(plan.total.lte(D(500).plus('0.50'))).toBe(true)
     expect(plan.items.every((i) => i.fixedAmount.gt(0))).toBe(true)
   })
+  it('sem caixa, usa só o que a stablecoin tem acima da meta dela', () => {
+    // Situação real depois de converter os reais: USDT 1.421 (meta 32,5%), nada em caixa.
+    const hs: DeficitHolding[] = [
+      { id: 'USDT', value: D('1421.37'), targetPct: D('32.5'), isCash: false, isCashLike: true },
+      { id: 'BTC', value: D('559.35'), targetPct: D(50), isCash: false, isCashLike: false },
+      { id: 'SOL', value: D('346.52'), targetPct: D(8), isCash: false, isCashLike: false },
+      { id: 'AVAX', value: D('140.35'), targetPct: null, isCash: false, isCashLike: false },
+      { id: 'ETH', value: D('33.29'), targetPct: D(5), isCash: false, isCashLike: false },
+      { id: 'BRL', value: D(0), targetPct: null, isCash: true, isCashLike: true },
+    ]
+    const plan = generatePlanFromDeficit(hs, 30, D(10))
+    // total 2.500,88; meta de USDT = 812,79; disponível = 1.421,37 − 812,79 = 608,58
+    expect(plan.cash.toFixed(2)).toBe('608.58')
+    expect(plan.items.map((i) => i.id).sort()).toEqual(['BTC', 'ETH'])
+    expect(plan.total.lte(plan.cash.plus('0.50'))).toBe(true) // falta 782,88: reduzido para caber
+    expect(plan.total.gt(D(600))).toBe(true)
+  })
+  it('stablecoin sem meta fica inteira disponível', () => {
+    const hs: DeficitHolding[] = [
+      { id: 'USDT', value: D(500), targetPct: null, isCash: false, isCashLike: true },
+      { id: 'BTC', value: D(500), targetPct: D(100), isCash: false, isCashLike: false },
+    ]
+    expect(generatePlanFromDeficit(hs, 30, D(10)).cash.toFixed(2)).toBe('500.00')
+  })
   it('sem caixa não gera itens', () => {
     const hs = holdings().map((h) => (h.id === 'BRL' ? { ...h, value: D(0) } : h))
     expect(generatePlanFromDeficit(hs, 30, D(10)).items).toEqual([])
