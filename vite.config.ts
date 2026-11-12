@@ -3,7 +3,11 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { defineConfig } from 'vitest/config'
 
+// VITE_BASE: caminho onde o app é servido. '/' na Vercel; '/NassaCapital/' no GitHub Pages.
+const base = process.env.VITE_BASE ?? '/'
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     tailwindcss(),
@@ -15,7 +19,8 @@ export default defineConfig({
         short_name: 'Carteira',
         description: 'Investimentos, metas de alocação e DCA',
         lang: 'pt-BR',
-        start_url: '/',
+        start_url: base,
+        scope: base,
         display: 'standalone',
         background_color: '#F7F6F3',
         theme_color: '#F7F6F3',
@@ -25,7 +30,7 @@ export default defineConfig({
           { src: 'pwa-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: { globPatterns: ['**/*.{js,css,html,svg,png,woff2}'], navigateFallback: '/index.html' },
+      workbox: { globPatterns: ['**/*.{js,css,html,svg,png,woff2}'], navigateFallback: `${base}index.html` },
     }),
   ],
   test: { include: ['src/**/*.test.ts', 'supabase/functions/**/*.test.ts'] },

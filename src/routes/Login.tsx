@@ -24,7 +24,7 @@ export function Login() {
     if (!parsed.success) return setError('Digite um e-mail válido.')
     setBusy(true)
     setError(null)
-    const { error } = await supabase.auth.signInWithOtp({ email: parsed.data, options: { emailRedirectTo: window.location.origin } })
+    const { error } = await supabase.auth.signInWithOtp({ email: parsed.data, options: { emailRedirectTo: new URL(import.meta.env.BASE_URL, window.location.origin).href } })
     setBusy(false)
     if (error) setError('Não foi possível enviar o link. Tente de novo em um minuto.')
     else setSentTo(parsed.data)

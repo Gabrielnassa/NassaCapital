@@ -38,6 +38,16 @@ Verificações: `npm run lint`, `npm run typecheck`, `npm test` e `npm run test:
 6. Depois do primeiro login, desative novos cadastros em Authentication > Sign In / Providers, para o app ficar só seu.
 7. Em Ajustes > Ativos, confira os IDs do CoinGecko de BP (`backpack`) e CARDS (`collector-crypt`): foram preenchidos sem consulta à API e precisam de confirmação.
 
+## Publicar no GitHub Pages
+
+O workflow `.github/workflows/pages.yml` compila e publica a cada push.
+
+1. Em Settings > Pages, troque **Source** para **GitHub Actions**.
+2. Em Settings > Secrets and variables > Actions > aba **Variables**, crie `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` (valores públicos do projeto Supabase).
+3. No Supabase, em Authentication > URL Configuration, inclua `https://SEU_USUARIO.github.io/NassaCapital/`.
+
+O site do Pages é público, mas só mostra a tela de login: os dados ficam no Supabase, protegidos por RLS.
+
 ## Publicar na Vercel
 
 Importe o repositório na Vercel (framework Vite), defina `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` nas variáveis de ambiente e publique. Para o link mágico e as rotas funcionarem ao recarregar a página, o `vercel.json` já redireciona tudo para `index.html`.
