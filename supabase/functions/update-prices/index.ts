@@ -2,7 +2,7 @@
 // Chamada pelo pg_cron a cada 15 min (header x-cron-secret) ou pelo dono do app ("Atualizar agora").
 // Erro ou limite (429) em uma fonte nunca apaga o último preço bom: só grava o que veio válido.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
-import { isB3Open, parseAwesomeFx, parseBrapi, parseBrapiFx, parseCoinGecko, type Quote } from '../_shared/quotes.ts'
+import { isB3Open, parseAwesomeFx, parseBrapi, parseBrapiFx, parseCoinGecko, type Quote } from './quotes.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -19,8 +19,11 @@ async function getJson(url: string, headers: Record<string, string> = {}): Promi
 
 /** Quem está chamando: o cron (todos os usuários) ou um usuário logado (só os ativos dele). */
 async function authorize(req: Request, admin: SupabaseClient): Promise<{ userId: string | null } | null> {
-  const secret = Deno.env.get('CRON_SECRET')
-  if (secret && req.headers.get('x-cron-secret') === secret) return { userId: null }
+  const secret = req.headers.get('x-cron-secret')
+  if (secret) {
+    const { data } = await admin.rpc('is_cron_secret', { candidate: secret })
+    return data === true ? { userId: null } : null
+  }
   const token = req.headers.get('Authorization')?.replace(/^Bearer /, '')
   if (!token) return null
   const { data } = await admin.auth.getUser(token)

@@ -2,11 +2,12 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 Deno.serve(async (req) => {
-  const secret = Deno.env.get('CRON_SECRET')
-  if (!secret || req.headers.get('x-cron-secret') !== secret) {
+  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+  const secret = req.headers.get('x-cron-secret')
+  const { data: allowed } = secret ? await admin.rpc('is_cron_secret', { candidate: secret }) : { data: false }
+  if (allowed !== true) {
     return new Response(JSON.stringify({ error: 'não autorizado' }), { status: 401 })
   }
-  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
   const { data, error } = await admin.rpc('take_snapshots')
   if (error) {
     console.error('daily-snapshot:', error.message)

@@ -21,7 +21,7 @@ Vite + React + TypeScript strict + Tailwind v4 + vite-plugin-pwa. Radix UI só c
 - `src/components/ui.tsx` — componentes; `src/index.css` — tokens.
 - `src/routes/` — telas; `src/features/` — formulário de lançamento e derivações de tela.
 - `supabase/migrations/` — schema, RLS, views `v_positions` e `v_allocation`, seed, cron.
-- `supabase/functions/` — `update-prices`, `daily-snapshot`, `asset-lookup`; lógica pura em `_shared/quotes.ts` (testada pelo Vitest).
+- `supabase/functions/` — `update-prices`, `daily-snapshot`, `asset-lookup`; lógica pura em `update-prices/quotes.ts` (testada pelo Vitest).
 
 ## Regras de negócio (cada uma tem teste)
 
@@ -61,7 +61,7 @@ Referência: Mercury, Linear, terminal de corretora. Ferramenta de trabalho dens
 ## Segurança
 
 - RLS em todas as tabelas; `prices` e `snapshots` só são escritas pelas Edge Functions (service role); `targets` só pela função `set_targets`.
-- Nenhuma chave de API no front nem no git. CoinGecko, brapi e o segredo do cron ficam em secrets do Supabase. As variáveis `VITE_*` são públicas por natureza.
+- Nenhuma chave de API no front nem no git. As chaves do CoinGecko e da brapi ficam em secrets das Edge Functions. O segredo do cron é gerado no banco e fica no Vault; as funções conferem por `is_cron_secret`. As variáveis `VITE_*` são públicas por natureza.
 - Preços sempre pelo servidor, nunca do navegador. Cripto é identificada pelo ID do CoinGecko, nunca só pelo ticker.
 
 ## Estado

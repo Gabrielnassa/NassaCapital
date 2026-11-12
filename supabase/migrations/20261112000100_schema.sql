@@ -317,6 +317,7 @@ select r.user_id, r.kind, r.asset_id, r.class, r.ticker, r.value_brl, r.value_us
 from rows r
 join tot t on t.user_id = r.user_id;
 
+revoke all on public.v_positions, public.v_targets_active, public.v_allocation from anon;
 grant select on public.v_positions, public.v_targets_active, public.v_allocation to authenticated, service_role;
 
 -- ---------------------------------------------------------------- funções de escrita

@@ -22,17 +22,16 @@ Verificações: `npm run lint`, `npm run typecheck`, `npm test` e `npm run test:
    npx supabase link --project-ref SEU_REF
    npx supabase db push
    ```
-   A migration `..._cron.sql` precisa de dois segredos no Vault. Rode antes, no SQL Editor:
+   A migration `..._cron.sql` precisa da URL do projeto no Vault. Rode antes, no SQL Editor:
    ```sql
    select vault.create_secret('https://SEU_REF.supabase.co', 'project_url');
-   select vault.create_secret('UM_TEXTO_ALEATORIO_LONGO', 'cron_secret');
    ```
+   O segredo que autentica o cron é gerado pela própria migration e fica só no banco.
 3. Grave as chaves das APIs como secrets das funções (nunca no `.env` do front) e publique as funções:
    ```bash
-   npx supabase secrets set COINGECKO_API_KEY=... BRAPI_TOKEN=... CRON_SECRET=UM_TEXTO_ALEATORIO_LONGO
+   npx supabase secrets set COINGECKO_API_KEY=... BRAPI_TOKEN=...
    npx supabase functions deploy update-prices daily-snapshot asset-lookup
    ```
-   `CRON_SECRET` tem de ser igual ao `cron_secret` do Vault.
 4. Em Authentication > URL Configuration, coloque a URL do app (a da Vercel e `http://localhost:5173`) em Site URL e Redirect URLs.
 5. Entre no app com seu e-mail (link mágico). Na tela Hoje, toque em "Carregar minha carteira de 11/11/2026".
 6. Depois do primeiro login, desative novos cadastros em Authentication > Sign In / Providers, para o app ficar só seu.
