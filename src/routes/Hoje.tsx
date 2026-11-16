@@ -2,7 +2,7 @@ import { RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { Button, Delta, EmptyState, ErrorNote, Panel, Popover } from '../components/ui'
-import { openExecutions, totals, type OpenExecution } from '../features/portfolio'
+import { openExecutions, planProgress, totals, type OpenExecution } from '../features/portfolio'
 import { TradeDialog, type TradePrefill } from '../features/TradeForm'
 import { sum, ZERO, type Ccy } from '../lib/calc/money'
 import { DEFAULT_SETTINGS, pick, refreshPrices, seedInitialData, useAssets, usePlans, usePriceStatus, useSettings, useWrite } from '../lib/data'
@@ -149,6 +149,22 @@ export function Hoje() {
         </Panel>
       )}
       {due.overdue.length > 0 && <ExecutionList title="Atrasadas" rows={due.overdue} main={main} showDate onRegister={register} />}
+
+      {plans.data.filter((p) => p.status === 'active').map((plan) => {
+        const progress = planProgress(plan)
+        const left = progress.planned.minus(progress.executed)
+        const funding = positions.data!.find((p) => p.asset_id === plan.funding_asset_id)
+        const short = funding?.value != null && funding.quote_currency === plan.source_currency && funding.value.lt(left)
+        return (
+          <Link key={plan.id} to="/dca" className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 rounded-md border border-border bg-surface px-3 py-2 text-xs text-muted no-underline hover:bg-sunken">
+            <span className="font-medium text-text">{plan.name}</span>
+            <span className="num">
+              {progress.doneCount} de {progress.count} · falta {fmtMoney(left, plan.source_currency)}
+              {funding && <> · {funding.ticker} <span className={short ? 'text-down' : ''}>{fmtMoney(funding.value, funding.quote_currency)}</span></>}
+            </span>
+          </Link>
+        )
+      })}
 
       <TradeDialog prefill={trade} onClose={() => setTrade(null)} />
     </div>

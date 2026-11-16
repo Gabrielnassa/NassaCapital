@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { z } from 'zod'
 import { Button, ErrorNote, Field, Input, Modal, NumberInput, Segmented, Select } from '../components/ui'
 import { convert, D, type Ccy, type Dec } from '../lib/calc/money'
-import { TX_LABEL, saveTransaction, useAssets, useBrokers, useWrite, type Asset, type Position, type Transaction, type TxType } from '../lib/data'
+import { TX_LABEL, saveTransaction, useAssets, useBrokers, useTransactions, useWrite, type Asset, type Position, type Transaction, type TxType } from '../lib/data'
 import { fmtMoney, fmtPrice, fmtQty, parseNumberBR, todayISO } from '../lib/format'
 import { usePortfolio } from '../lib/live-context'
 
@@ -68,6 +68,7 @@ function initialState(prefill: TradePrefill, assets: Asset[], positions: Positio
 function Form(props: { prefill: TradePrefill; assets: Asset[]; positions: Position[]; onDone: () => void }) {
   const { prefill, assets, positions } = props
   const brokers = useBrokers()
+  const transactions = useTransactions()
   const [f, setF] = useState<FormState>(() => initialState(prefill, assets, positions))
   const [errors, setErrors] = useState<Record<string, string>>({})
   const save = useWrite(saveTransaction)
@@ -100,6 +101,13 @@ function Form(props: { prefill: TradePrefill; assets: Asset[]; positions: Positi
     if (!pos?.price?.gt(0) || !t || !calc.rate) return null
     return convert(D(t), ccy, pos.quote_currency, calc.rate).div(pos.price)
   }, [positions, f.asset_id, f.total, ccy, calc.rate])
+
+  // Mesmo ativo, tipo, data e quantidade de um lançamento que já existe: provável repetição.
+  const duplicate = useMemo(() => {
+    const q = parseNumberBR(f.quantity)
+    if (!isNew || !q) return null
+    return transactions.data?.find((t) => t.asset_id === f.asset_id && t.type === f.type && t.date === f.date && t.quantity.eq(q)) ?? null
+  }, [isNew, transactions.data, f.asset_id, f.type, f.date, f.quantity])
 
   const fundingOptions = assets.filter((a) => (a.class === 'cash' || a.class === 'stable') && a.id !== f.asset_id)
   const funding = fundingOptions.find((a) => a.id === f.debit)
@@ -192,6 +200,11 @@ function Form(props: { prefill: TradePrefill; assets: Asset[]; positions: Positi
         )}
       </div>
 
+      {duplicate && (
+        <p role="alert" className="col-span-2 m-0 rounded-md border border-warn px-3 py-2 text-sm text-warn">
+          Já existe um lançamento igual nesta data. Confira em Lançamentos para não registrar duas vezes.
+        </p>
+      )}
       <div className="col-span-2">
         <ErrorNote error={save.error} />
       </div>

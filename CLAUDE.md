@@ -19,7 +19,8 @@ Vite + React + TypeScript strict + Tailwind v4 + vite-plugin-pwa. Radix UI só c
 - `src/lib/format/` — formato brasileiro (R$ 1.234,56 · 12,5%), sempre por aqui.
 - `src/lib/data.ts` — única porta para o Supabase: leitura com Zod, numeric vira Decimal, escritas.
 - `src/lib/live.ts` e `live-context.tsx` — preço ao vivo da Binance; as telas leem a carteira por `usePortfolio()`.
-- `src/components/ui.tsx` — componentes; `src/index.css` — tokens.
+- `src/components/ui.tsx` — componentes; `src/components/LineChart.tsx` — gráfico de linhas em SVG próprio; `src/index.css` — tokens.
+- `src/lib/calc/reconcile.ts` e `src/features/ReconcileDialog.tsx` — conferência de saldos com a corretora; `src/lib/calc/evolution.ts` e `src/routes/Evolucao.tsx` — evolução do patrimônio.
 - `src/routes/` — telas; `src/features/` — formulário de lançamento e derivações de tela.
 - `supabase/migrations/` — schema, RLS, views `v_positions` e `v_allocation`, seed, cron.
 - `supabase/functions/` — `update-prices`, `daily-snapshot`, `asset-lookup`; lógica pura em `update-prices/quotes.ts` (testada pelo Vitest).
@@ -45,6 +46,10 @@ Vite + React + TypeScript strict + Tailwind v4 + vite-plugin-pwa. Radix UI só c
 - "Gerar plano pelo que falta": o dinheiro disponível é todo o caixa (classe `cash`) mais a parte das stablecoins acima da meta delas (sem meta, conta inteira). Compra o déficit de cada ativo que não é caixa nem stablecoin, reduz na proporção se o disponível não cobrir; o que sobra fica de reserva. Execução abaixo de US$ 10 vira semanal ou compra única.
 - A execução de DCA acompanha o lançamento por gatilho no banco (`sync_dca_execution`): criar o lançamento marca como feita, excluir devolve para pendente. O front não atualiza `dca_executions.status` para isso.
 - Preços do servidor a cada 5 minutos, que é o que cabe nas 10.000 chamadas mensais do CoinGecko Demo. Com a aba aberta, o app relê o banco a cada minuto; os pares da Binance mudam a cada segundo.
+- Ordem no preço médio: lançamentos do mesmo ativo na mesma data e no mesmo instante contam entradas antes de saídas (`v_positions`, migration `20261116000100`). Quem chama `computePosition` (TS) deve passar a mesma ordem.
+- Conferir com a corretora: o dono digita a quantidade que a corretora mostra; a diferença vira `transfer_in`/`transfer_out` com preço 0 ("Ajuste de saldo conforme a corretora"), sem mexer no custo. Campo vazio = não confere (ex.: BP e CARDS ficam na Phantom).
+- Evolução: um ponto por dia a partir de `snapshots` (23:55), patrimônio vs custo. Gráfico em SVG próprio (Recharts continua fora). Patrimônio usa `--accent`; custo é linha de referência tracejada em `--chart-ref`, cor validada contra o destaque para daltonismo, com rótulo direto e tabela por causa do contraste baixo.
+- Aviso de lançamento repetido no formulário: mesmo ativo, tipo, data e quantidade de um lançamento existente.
 - Editar plano muda só nome e origem do dinheiro. Para mudar valores, criar outro plano.
 - Tabela extra `settings` (moeda principal, tema).
 - B3 só é buscada em dia útil das 10h às 18h30 de Brasília (feriados não são tratados). O câmbio USD-BRL vem do CoinGecko (bitcoin em reais ÷ bitcoin em dólares), 24 horas, na mesma chamada das cotações; brapi e AwesomeAPI são reservas.
@@ -73,4 +78,4 @@ Referência: Mercury, Linear, terminal de corretora. Ferramenta de trabalho dens
 
 ## Estado
 
-MVP (etapas 1 a 6) escrito. Fase 2 (Proventos, Evolução, IR) e fase 3 (Binance somente leitura, importação da B3, alertas) só quando o dono pedir. As pendências de publicação estão no README.
+MVP (etapas 1 a 6) escrito. Evolução (fase 2) feita a pedido do dono em 16/11. Fase 2 restante (Proventos, IR) e fase 3 (Binance somente leitura, importação da B3, alertas) só quando o dono pedir. As pendências de publicação estão no README.

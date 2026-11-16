@@ -16,6 +16,7 @@ import { Login, SetupNeeded } from './routes/Login'
 import { Mais } from './routes/Mais'
 import { Metas } from './routes/Metas'
 import { Simulacao } from './routes/Simulacao'
+import { Evolucao } from './routes/Evolucao'
 
 function Private() {
   const settings = useSettings()
@@ -32,6 +33,7 @@ function Private() {
         <Route path="/metas" element={<Metas />} />
         <Route path="/dca" element={<Dca />} />
         <Route path="/simulacao" element={<Simulacao />} />
+        <Route path="/evolucao" element={<Evolucao />} />
         <Route path="/lancamentos" element={<Lancamentos />} />
         <Route path="/ajustes" element={<Ajustes />} />
         <Route path="/mais" element={<Mais />} />

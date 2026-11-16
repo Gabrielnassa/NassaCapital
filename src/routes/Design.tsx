@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { Badge, Button, Delta, EmptyState, ErrorNote, Field, Input, Modal, NumberInput, Panel, Popover, ProgressBar, SegmentBar, Segmented, Select, Stats, Tabs, TargetBar } from '../components/ui'
 import { D } from '../lib/calc/money'
 import { fmtMoney, fmtPct, fmtPrice, fmtQty } from '../lib/format'
+import { LineChart } from '../components/LineChart'
 import { applyTheme } from '../lib/theme'
 
 const COLORS = [
@@ -107,6 +108,17 @@ export function Design() {
           { label: 'Bitcoin', pct: D('22.2') }, { label: 'Altcoins', pct: D('23.5') }, { label: 'Stablecoins', pct: D('44.3') },
           { label: 'Ações', pct: D('6') }, { label: 'Caixa', pct: D('4'), muted: true },
         ]} />
+      </Section>
+
+      <Section title="Gráfico de linhas">
+        <Panel>
+          <LineChart aria-label="Exemplo: patrimônio e custo por dia" labels={['12/11', '13/11', '14/11', '15/11', '16/11']}
+            series={[
+              { id: 'v', label: 'Patrimônio', color: 'var(--accent)', values: ['2471.56', '2485.97', '2418.84', '2430.73', '2416.61'].map(D) },
+              { id: 'c', label: 'Custo', color: 'var(--chart-ref)', dashed: true, values: ['2519.47', '2573.44', '2573.41', '2573.41', '2600.41'].map(D) },
+            ]}
+            format={(v) => fmtMoney(v, 'USD')} formatAxis={(v) => `US$ ${v.toFixed(0)}`} tooltipTitle={(i) => `${12 + i}/11/2026`} />
+        </Panel>
       </Section>
 
       <Section title="Tabela">

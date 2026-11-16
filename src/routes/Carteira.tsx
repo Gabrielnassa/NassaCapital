@@ -3,6 +3,7 @@ import { Fragment, useState } from 'react'
 import { Link } from 'react-router'
 import { Badge, Button, Delta, EmptyState, ErrorNote, PageHeader, Panel, SegmentBar, Stats } from '../components/ui'
 import { totals } from '../features/portfolio'
+import { ReconcileDialog } from '../features/ReconcileDialog'
 import { sum, ZERO, type Ccy, type Dec } from '../lib/calc/money'
 import { GROUPS, SEGMENTS, segmentOf, type Segment } from '../lib/calc/segments'
 import { DEFAULT_SETTINGS, pick, useAssets, useSettings, type Allocation, type Position } from '../lib/data'
@@ -51,6 +52,7 @@ export function Carteira() {
   const assets = useAssets()
   const settings = useSettings()
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: 'brl', desc: true })
+  const [reconciling, setReconciling] = useState(false)
 
   if (portfolio.error) return <ErrorNote error={portfolio.error} />
   if (!portfolio.positions || !portfolio.allocation || !assets.data) return null
@@ -110,8 +112,10 @@ export function Carteira() {
   return (
     <>
       <PageHeader title="Carteira">
-        <span className="text-xs text-muted">{portfolio.live ? 'Binance ao vivo' : 'Preços gravados pelo servidor'}</span>
+        <span className="text-xs text-muted max-md:hidden">{portfolio.live ? 'Binance ao vivo' : 'Preços gravados pelo servidor'}</span>
+        <Button size="sm" onClick={() => setReconciling(true)}>Conferir com a corretora</Button>
       </PageHeader>
+      <ReconcileDialog open={reconciling} onClose={() => setReconciling(false)} positions={portfolio.positions} />
 
       <div className="mb-3 flex flex-col gap-3">
         <Stats items={[

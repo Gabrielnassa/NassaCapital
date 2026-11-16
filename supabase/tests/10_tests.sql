@@ -74,6 +74,15 @@ delete from transactions where dca_execution_id is not null;
 select t.ok((select count(*) from dca_executions where status <> 'pending' or transaction_id is not null) = 0,
   'excluir o lançamento devolve a execução para pendente');
 
+-- ---------- mesma data e mesmo instante: entrada antes da saída
+insert into assets (ticker, name, class, source, source_id, quote_currency) values ('USDC', 'USD Coin', 'stable', 'coingecko', 'usd-coin', 'USD');
+insert into transactions (asset_id, type, date, quantity, unit_price, currency, fx_rate_to_brl, created_at, id)
+select id, 'sell'::tx_type, date '2026-11-13', 26.9, 1, 'USD', 5.6, timestamptz '2026-11-13 12:00', uuid '00000000-0000-0000-0000-000000000001' from assets where ticker = 'USDC'
+union all
+select id, 'buy'::tx_type, date '2026-11-13', 1421.25, 1.001, 'USD', 5.6, timestamptz '2026-11-13 12:00', uuid 'ffffffff-ffff-ffff-ffff-ffffffffffff' from assets where ticker = 'USDC';
+select t.ok((select quantity = 1394.35 and avg_price = 1.001 from v_positions where ticker = 'USDC'),
+  'lançamentos no mesmo instante: a entrada conta antes da saída, mesmo com id menor na saída');
+
 -- ---------- metas: validação de 100% e escrita só pela função
 do $$ begin
   begin

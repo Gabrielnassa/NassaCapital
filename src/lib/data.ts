@@ -91,6 +91,9 @@ const settingsRow = z.object({ main_currency: ccy, theme: z.enum(['system', 'lig
 export type Settings = z.infer<typeof settingsRow>
 export const DEFAULT_SETTINGS: Settings = { main_currency: 'BRL', theme: 'system' }
 
+const snapshotRow = z.object({ date: z.string(), class: assetClass, value_brl: dec, value_usd: dec, cost_brl: dec, cost_usd: dec })
+export type Snapshot = z.infer<typeof snapshotRow>
+
 const priceRow = z.object({ fx_pair: z.string().nullable(), fetched_at: z.string(), source_ts: z.string() })
 
 async function rows<T extends z.ZodType>(schema: T, query: PromiseLike<{ data: unknown; error: { message: string } | null }>): Promise<z.infer<T>[]> {
@@ -132,6 +135,10 @@ export const useSettings = () =>
     queryKey: ['settings'],
     queryFn: async () => (await rows(settingsRow, supabase.from('settings').select('*')))[0] ?? DEFAULT_SETTINGS,
   })
+
+/** Patrimônio diário por classe, gravado às 23:55 pela função daily-snapshot. */
+export const useSnapshots = () =>
+  useQuery({ queryKey: ['snapshots'], queryFn: () => rows(snapshotRow, supabase.from('snapshots').select('date, class, value_brl, value_usd, cost_brl, cost_usd').order('date')) })
 
 /** Horário da última atualização de preços (o mais recente entre os ativos). */
 export const usePriceStatus = () =>
@@ -201,6 +208,19 @@ export async function saveTransaction(args: {
 /** Exclui o lançamento. Se ele veio de uma execução de DCA, o banco devolve a execução para pendente. */
 export async function deleteTransaction(tx: Pick<Transaction, 'id'>) {
   check(await supabase.from('transactions').delete().eq('id', tx.id))
+}
+
+/**
+ * Ajustes de conferência: entrada ou saída sem custo, para o saldo do app bater com a corretora
+ * (rendimentos, poeira de conversão). Não mexem no custo; entradas sem custo baixam o preço médio.
+ */
+export async function saveAdjustments(args: { items: { asset_id: string; diff: Dec }[]; fx_rate_to_brl: string; date: string }) {
+  if (!args.items.length) return
+  check(await supabase.from('transactions').insert(args.items.map((i) => ({
+    asset_id: i.asset_id, type: i.diff.gt(0) ? 'transfer_in' : 'transfer_out', date: args.date,
+    quantity: i.diff.abs().toFixed(), unit_price: '0', fee: '0', currency: 'USD', fx_rate_to_brl: args.fx_rate_to_brl,
+    notes: 'Ajuste de saldo conforme a corretora',
+  }))))
 }
 
 export async function setTargets(args: { kind: 'asset' | 'class'; items: { asset_id?: string; class?: AssetClass; percent: string }[] }) {

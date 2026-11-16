@@ -1,4 +1,4 @@
-import { ArrowLeftRight, CalendarCheck, Menu, Repeat, Settings, Target, TrendingUp, Wallet, type LucideIcon } from 'lucide-react'
+import { ArrowLeftRight, CalendarCheck, LineChart, Menu, Repeat, Settings, Target, TrendingUp, Wallet, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router'
 import { usePriceStatus } from '../lib/data'
@@ -14,13 +14,14 @@ interface Item {
 const ALL: Item[] = [
   { to: '/', label: 'Hoje', icon: CalendarCheck },
   { to: '/carteira', label: 'Carteira', icon: Wallet },
+  { to: '/evolucao', label: 'Evolução', icon: LineChart },
   { to: '/metas', label: 'Metas', icon: Target },
   { to: '/dca', label: 'DCA', icon: Repeat },
   { to: '/simulacao', label: 'Simulação', icon: TrendingUp },
   { to: '/lancamentos', label: 'Lançamentos', icon: ArrowLeftRight },
   { to: '/ajustes', label: 'Ajustes', icon: Settings },
 ]
-const MOBILE: Item[] = [ALL[0], ALL[1], ALL[3], { to: '/mais', label: 'Mais', icon: Menu }]
+const MOBILE: Item[] = [ALL[0], ALL[1], ALL[4], { to: '/mais', label: 'Mais', icon: Menu }]
 
 /** De onde vêm os preços agora: Binance ao vivo ou o último registro do servidor. */
 function PriceSource() {
