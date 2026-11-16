@@ -6,6 +6,7 @@ import {
   CLASS_LABEL, CLASS_ORDER, DEFAULT_SETTINGS, addBroker, deleteAsset, deleteBroker, lookupAsset, saveAsset, saveSettings,
   useAssets, useBrokers, useSettings, useWrite, type Asset, type AssetClass, type AssetInput, type Source,
 } from '../lib/data'
+import { PasswordForm } from '../features/PasswordForm'
 import { useSession } from '../lib/session'
 import { supabase } from '../lib/supabase'
 import { applyTheme, type Theme } from '../lib/theme'
@@ -190,6 +191,7 @@ export function Ajustes() {
                   options={[{ value: 'system', label: 'Do aparelho' }, { value: 'light', label: 'Claro' }, { value: 'dark', label: 'Escuro' }]} />
               </Field>
               <ErrorNote error={savePrefs.error} />
+              <PasswordForm />
               <div className="flex items-center justify-between gap-3 border-t border-border pt-3 text-sm">
                 <span className="truncate text-muted">{session?.user.email}</span>
                 <Button onClick={() => supabase.auth.signOut()}>Sair</Button>

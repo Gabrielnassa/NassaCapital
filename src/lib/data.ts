@@ -286,6 +286,24 @@ export async function addBroker(name: string) {
 export async function deleteBroker(id: string) {
   check(await supabase.from('brokers').delete().eq('id', id))
 }
+/**
+ * Define a senha de acesso. Se o Supabase exigir confirmação recente, a primeira chamada falha com
+ * "reauthentication": aí mandamos o código por e-mail (reauthenticate) e a segunda leva o código.
+ */
+export async function setPassword(args: { password: string; nonce?: string }): Promise<'done' | 'code-sent'> {
+  const { error } = await supabase.auth.updateUser(args.nonce ? { password: args.password, nonce: args.nonce } : { password: args.password })
+  if (!error) return 'done'
+  const m = error.message.toLowerCase()
+  if (!args.nonce && m.includes('reauthentication')) {
+    check(await supabase.auth.reauthenticate())
+    return 'code-sent'
+  }
+  if (m.includes('same') || m.includes('different from the old')) throw new Error('Essa já é a sua senha atual.')
+  if (m.includes('weak') || m.includes('at least')) throw new Error('Senha fraca. Use pelo menos 8 caracteres, misturando letras e números.')
+  if (args.nonce && (m.includes('nonce') || m.includes('expired') || m.includes('invalid'))) throw new Error('Código errado ou vencido. Peça outro.')
+  throw new Error('Não foi possível definir a senha. Tente de novo.')
+}
+
 export async function saveSettings(patch: Partial<Settings>) {
   const { data } = await supabase.auth.getUser()
   check(await supabase.from('settings').upsert({ user_id: data.user?.id, ...patch }))

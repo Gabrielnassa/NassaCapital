@@ -37,6 +37,15 @@ Verificações: `npm run lint`, `npm run typecheck`, `npm test` e `npm run test:
 6. Depois do primeiro login, desative novos cadastros em Authentication > Sign In / Providers, para o app ficar só seu.
 7. Em Ajustes > Ativos, confira os IDs do CoinGecko de BP (`backpack`) e CARDS (`collector-crypt`): foram preenchidos sem consulta à API e precisam de confirmação.
 
+## Entrar no celular
+
+No iPhone, o link do e-mail abre no Safari, e o app da tela inicial não recebe essa sessão. Por isso:
+
+1. No computador, já conectado, abra Ajustes e defina uma senha em "Senha de acesso".
+2. No celular, entre com e-mail e senha.
+
+Sem senha, use "Entrar sem senha": o app manda o link por e-mail; no e-mail, toque e segure o link, copie e cole no app.
+
 ## Publicar no GitHub Pages
 
 O workflow `.github/workflows/pages.yml` compila e publica a cada push.
