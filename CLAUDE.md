@@ -52,6 +52,7 @@ Vite + React + TypeScript strict + Tailwind v4 + vite-plugin-pwa. Radix UI só c
 - Aviso de lançamento repetido no formulário: mesmo ativo, tipo, data e quantidade de um lançamento existente.
 - Editar plano muda só nome e origem do dinheiro. Para mudar valores, criar outro plano.
 - Tabela extra `settings` (moeda principal, tema).
+- Login: `signInWithOtp` com `shouldCreateUser: false` (ninguém cria conta nova) e código de 6 dígitos digitado no app (`verifyOtp`, tipo `email`), porque o link do e-mail abre no Safari e não no app da tela inicial do iPhone. O template "Magic link" do Supabase precisa ter `{{ .Token }}`.
 - B3 só é buscada em dia útil das 10h às 18h30 de Brasília (feriados não são tratados). O câmbio USD-BRL vem do CoinGecko (bitcoin em reais ÷ bitcoin em dólares), 24 horas, na mesma chamada das cotações; brapi e AwesomeAPI são reservas.
 - Número digitado: vírgula é decimal ("1.234,56"); sem vírgula, o ponto é decimal ("0.5"). Em campos de valor e preço (`parseMoneyBR`), ponto em grupos de três é milhar ("100.000" = cem mil); em quantidade, não.
 - Carteira em dois níveis (`src/lib/calc/segments.ts`): Cripto (Bitcoin, Altcoins, Stablecoins), Bolsa (Ações, FIIs, ETFs) e Caixa. Bitcoin é reconhecido pelo ID do CoinGecko. As classes do banco não mudaram.
