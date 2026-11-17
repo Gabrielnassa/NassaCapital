@@ -30,6 +30,10 @@ export const fmtPct = (v: Num) => (v == null ? DASH : `${run(pct, v)}%`)
 export const fmtPctSigned = (v: Num) => (v == null ? DASH : `${run(pctSigned, v)}%`)
 export const fmtQty = (v: Num) => (v == null ? DASH : run(qty, v))
 
+/** Valor curto com sinal, sem centavos, para rótulos de gráfico: +R$ 1.234 · −US$ 52 */
+export const fmtMoneyShortSigned = (v: Num, ccy: Ccy) =>
+  v == null ? DASH : run(nf({ style: 'currency', currency: ccy, maximumFractionDigits: 0, minimumFractionDigits: 0, signDisplay: 'exceptZero' }), v)
+
 /** Preço unitário: 2 casas acima de 1, mais casas para moedas de valor baixo. */
 export function fmtPrice(v: Num, ccy: Ccy) {
   if (v == null) return DASH

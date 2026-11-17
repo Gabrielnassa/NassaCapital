@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { D } from '../calc/money'
-import { fmtDate, fmtMoney, fmtMoneySigned, fmtPct, fmtPctSigned, fmtPrice, fmtQty, parseMoneyBR, parseNumberBR, todayISO } from './index'
+import { fmtDate, fmtMoney, fmtMoneyShortSigned, fmtMoneySigned, fmtPct, fmtPctSigned, fmtPrice, fmtQty, parseMoneyBR, parseNumberBR, todayISO } from './index'
 
 describe('formato brasileiro', () => {
   it('dinheiro', () => {
@@ -13,6 +13,11 @@ describe('formato brasileiro', () => {
     expect(fmtMoneySigned(D('-10'), 'BRL')).toBe('−R$ 10,00')
     expect(fmtPctSigned(D('-2.345'))).toBe('−2,35%')
     expect(fmtPctSigned(D('2.5'))).toBe('+2,5%')
+  })
+  it('valor curto com sinal, para rótulo de gráfico', () => {
+    expect(fmtMoneyShortSigned(D('-799.01'), 'BRL')).toBe('−R$ 799')
+    expect(fmtMoneyShortSigned(D('1234.6'), 'BRL')).toBe('+R$ 1.235')
+    expect(fmtMoneyShortSigned(D('0'), 'USD')).toBe('US$ 0')
   })
   it('percentual, quantidade e preço', () => {
     expect(fmtPct(D('12.5'))).toBe('12,5%')

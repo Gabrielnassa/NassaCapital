@@ -2,8 +2,8 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Badge, Button, Delta, EmptyState, ErrorNote, Field, Input, Modal, NumberInput, Panel, Popover, ProgressBar, SegmentBar, Segmented, Select, Stats, Tabs, TargetBar } from '../components/ui'
 import { D } from '../lib/calc/money'
-import { fmtMoney, fmtPct, fmtPrice, fmtQty } from '../lib/format'
-import { LineChart } from '../components/LineChart'
+import { fmtMoney, fmtMoneyShortSigned, fmtPct, fmtPrice, fmtQty } from '../lib/format'
+import { BarChart } from '../components/BarChart'
 import { applyTheme } from '../lib/theme'
 
 const COLORS = [
@@ -110,14 +110,12 @@ export function Design() {
         ]} />
       </Section>
 
-      <Section title="Gráfico de linhas">
-        <Panel>
-          <LineChart aria-label="Exemplo: patrimônio e custo por dia" labels={['12/11', '13/11', '14/11', '15/11', '16/11']}
-            series={[
-              { id: 'v', label: 'Patrimônio', color: 'var(--accent)', values: ['2471.56', '2485.97', '2418.84', '2430.73', '2416.61'].map(D) },
-              { id: 'c', label: 'Custo', color: 'var(--chart-ref)', dashed: true, values: ['2519.47', '2573.44', '2573.41', '2573.41', '2600.41'].map(D) },
-            ]}
-            format={(v) => fmtMoney(v, 'USD')} formatAxis={(v) => `US$ ${v.toFixed(0)}`} tooltipTitle={(i) => `${12 + i}/11/2026`} />
+      <Section title="Gráfico de ganho ou perda">
+        <Panel title="Ganho ou perda por dia (R$)">
+          <BarChart aria-label="Exemplo: ganho ou perda por dia" labels={['12/11', '13/11', '14/11', '15/11', '16/11', '17/11']}
+            values={['-268.29', '-489.83', '-865.6', '-799.01', '120.4', '0'].map(D)}
+            formatLabel={(v) => fmtMoneyShortSigned(v, 'BRL')} formatAxis={(v) => v.toFixed(0)}
+            tooltip={(i) => <div className="num">{`${12 + i}/11/2026`}</div>} />
         </Panel>
       </Section>
 

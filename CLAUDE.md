@@ -19,7 +19,7 @@ Vite + React + TypeScript strict + Tailwind v4 + vite-plugin-pwa. Radix UI só c
 - `src/lib/format/` — formato brasileiro (R$ 1.234,56 · 12,5%), sempre por aqui.
 - `src/lib/data.ts` — única porta para o Supabase: leitura com Zod, numeric vira Decimal, escritas.
 - `src/lib/live.ts` e `live-context.tsx` — preço ao vivo da Binance; as telas leem a carteira por `usePortfolio()`.
-- `src/components/ui.tsx` — componentes; `src/components/LineChart.tsx` — gráfico de linhas em SVG próprio; `src/index.css` — tokens.
+- `src/components/ui.tsx` — componentes; `src/components/BarChart.tsx` — barras de ganho ou perda em SVG próprio; `src/index.css` — tokens.
 - `src/lib/calc/reconcile.ts` e `src/features/ReconcileDialog.tsx` — conferência de saldos com a corretora; `src/lib/calc/evolution.ts` e `src/routes/Evolucao.tsx` — evolução do patrimônio.
 - `src/routes/` — telas; `src/features/` — formulário de lançamento e derivações de tela.
 - `supabase/migrations/` — schema, RLS, views `v_positions` e `v_allocation`, seed, cron.
@@ -48,7 +48,7 @@ Vite + React + TypeScript strict + Tailwind v4 + vite-plugin-pwa. Radix UI só c
 - Preços do servidor a cada 5 minutos, que é o que cabe nas 10.000 chamadas mensais do CoinGecko Demo. Com a aba aberta, o app relê o banco a cada minuto; os pares da Binance mudam a cada segundo.
 - Ordem no preço médio: lançamentos do mesmo ativo na mesma data e no mesmo instante contam entradas antes de saídas (`v_positions`, migration `20261116000100`). Quem chama `computePosition` (TS) deve passar a mesma ordem.
 - Conferir com a corretora: o dono digita a quantidade que a corretora mostra; a diferença vira `transfer_in`/`transfer_out` com preço 0 ("Ajuste de saldo conforme a corretora"), sem mexer no custo. Campo vazio = não confere (ex.: BP e CARDS ficam na Phantom).
-- Evolução: um ponto por dia a partir de `snapshots` (23:55), patrimônio vs custo. Gráfico em SVG próprio (Recharts continua fora). Patrimônio usa `--accent`; custo é linha de referência tracejada em `--chart-ref`, cor validada contra o destaque para daltonismo, com rótulo direto e tabela por causa do contraste baixo.
+- Evolução: um ponto por dia a partir de `snapshots` (23:55). O dono achou confuso o gráfico de duas linhas (patrimônio e custo, eixo sem zero) e escolheu em 17/11 barras de ganho ou perda por dia (valor − investido) a partir do zero: verde acima, vermelho abaixo, rótulo com sinal em cada barra. Verde e vermelho não se separam para daltonismo, então a direção da barra e o sinal carregam a informação, nunca só a cor. SVG próprio (Recharts continua fora).
 - Aviso de lançamento repetido no formulário: mesmo ativo, tipo, data e quantidade de um lançamento existente.
 - Editar plano muda só nome e origem do dinheiro. Para mudar valores, criar outro plano.
 - Tabela extra `settings` (moeda principal, tema).
