@@ -83,6 +83,30 @@ select id, 'buy'::tx_type, date '2026-11-13', 1421.25, 1.001, 'USD', 5.6, timest
 select t.ok((select quantity = 1394.35 and avg_price = 1.001 from v_positions where ticker = 'USDC'),
   'lançamentos no mesmo instante: a entrada conta antes da saída, mesmo com id menor na saída');
 
+-- ---------- investido em reais pelo câmbio de cada lançamento
+insert into assets (ticker, name, class, source, source_id, quote_currency) values ('USDX', 'Dólar teste', 'stable', 'manual', null, 'USD');
+insert into transactions (asset_id, type, date, quantity, unit_price, currency, fx_rate_to_brl)
+select id, 'buy', date '2026-11-20', 1421, 8000.0 / 1421, 'BRL', 5.63 from assets where ticker = 'USDX';
+-- lançamento posterior com câmbio 5,79: vira o câmbio "atual" (não há cotação gravada no teste)
+insert into transactions (asset_id, type, date, quantity, unit_price, currency, fx_rate_to_brl)
+select id, 'buy', date '2026-11-21', 1, 1, 'USD', 5.79 from assets where ticker = 'USDX';
+select t.ok((select round(cost_brl, 2) = round(8000 + 5.79, 2) from v_positions where ticker = 'USDX'),
+  'investido em reais usa o câmbio de cada compra (R$ 8.000 a 5,63 + US$ 1 a 5,79), não o de hoje');
+select t.ok((select round(cost_usd, 2) = round(8000 / 5.63 + 1, 2) from v_positions where ticker = 'USDX'),
+  'investido em dólar também pelo câmbio de cada compra');
+select t.ok((select round(value_brl, 2) = round(1422 * 5.79, 2) from v_positions where ticker = 'USDX'),
+  'valor em reais continua pelo câmbio de hoje');
+insert into transactions (asset_id, type, date, quantity, unit_price, currency, fx_rate_to_brl)
+select id, 'sell', date '2026-11-22', 711, 1, 'USD', 5.79 from assets where ticker = 'USDX';
+select t.ok((select round(cost_brl, 4) = round((8000 + 5.79) / 1422 * 711, 4) from v_positions where ticker = 'USDX'),
+  'venda reduz o investido em reais na proporção, sem mudar o preço médio');
+
+-- ---------- rendimento: entra sem custo e fica separado
+insert into transactions (asset_id, type, date, quantity, unit_price, currency, fx_rate_to_brl)
+select id, 'reward', date '2026-11-22', 0.5, 0, 'USD', 5.79 from assets where ticker = 'USDX';
+select t.ok((select quantity = 711.5 and reward_qty = 0.5 and round(cost_brl, 4) = round((8000 + 5.79) / 1422 * 711, 4) from v_positions where ticker = 'USDX'),
+  'rendimento aumenta a quantidade, não muda o investido e aparece em reward_qty');
+
 -- ---------- metas: validação de 100% e escrita só pela função
 do $$ begin
   begin
@@ -110,6 +134,24 @@ select public.set_targets('class', '[{"class":"crypto","percent":60},{"class":"s
 select t.ok((select count(*) from v_targets_active where class is not null) = 2, 'metas por classe gravadas');
 select t.ok((select sum(percent) from v_targets_active where asset_id is not null) = 100, 'metas por ativo intactas');
 
+-- ---------- lembrete: inscrição do aparelho e hora
+insert into push_subscriptions (endpoint, p256dh, auth) values ('https://web.push.apple.com/abc', 'p', 'a');
+insert into settings (user_id, reminder_hour) values ('00000000-0000-0000-0000-00000000000a', 10)
+  on conflict (user_id) do update set reminder_hour = excluded.reminder_hour;
+select t.ok((select reminder_hour from settings) = 10, 'hora do lembrete gravada');
+do $$ begin
+  update settings set reminder_hour = 24;
+  raise exception 'FALHOU: aceitou hora 24';
+exception when check_violation then
+  raise notice 'ok - hora do lembrete só de 0 a 23';
+end $$;
+do $$ begin
+  perform public.vapid_private_jwk();
+  raise exception 'FALHOU: usuário leu a chave privada do push';
+exception when insufficient_privilege then
+  raise notice 'ok - usuário não lê a chave privada do push';
+end $$;
+
 -- ---------- RLS: B não enxerga nem altera nada de A
 select t.login('00000000-0000-0000-0000-00000000000b');
 select t.ok((select count(*) from assets) = 0, 'B não lê assets de A');
@@ -118,6 +160,7 @@ select t.ok((select count(*) from targets) = 0, 'B não lê targets de A');
 select t.ok((select count(*) from dca_plans) + (select count(*) from dca_plan_items)
                 + (select count(*) from dca_executions) = 0, 'B não lê DCA de A');
 select t.ok((select count(*) from v_positions) + (select count(*) from v_allocation) = 0, 'B não lê as views de A');
+select t.ok((select count(*) from push_subscriptions) = 0, 'B não lê as inscrições de push de A');
 with u as (update transactions set quantity = 1 returning 1) select t.ok((select count(*) from u) = 0, 'B não altera transactions de A');
 with d as (delete from assets returning 1) select t.ok((select count(*) from d) = 0, 'B não apaga assets de A');
 do $$ begin
@@ -139,6 +182,9 @@ end $$;
 reset role;
 set role service_role;
 select t.ok(public.take_snapshots() = 4, 'snapshot grava 4 classes de A');
+update snapshots set cost_brl = 1, cost_usd = 1;
+select t.ok(public.recompute_snapshot_costs() = 4, 'recálculo do custo atualiza os 4 snapshots');
+select t.ok((select bool_and(cost_brl > 1 and cost_usd > 1) from snapshots), 'custo dos snapshots é recalculado pela regra histórica');
 select t.ok(public.take_snapshots() = 4, 'snapshot do mesmo dia atualiza, sem duplicar');
 select t.ok((select count(*) from snapshots) = 4, '4 linhas em snapshots');
 reset role;

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Button, ErrorNote, Modal, NumberInput } from '../components/ui'
+import { Button, ErrorNote, Field, Modal, NumberInput, Segmented } from '../components/ui'
 import { reconcile } from '../lib/calc/reconcile'
 import { D, type Dec } from '../lib/calc/money'
 import { saveAdjustments, useWrite, type Position } from '../lib/data'
@@ -11,6 +11,7 @@ import { fmtQty, parseNumberBR, todayISO } from '../lib/format'
  */
 export function ReconcileDialog(props: { open: boolean; onClose: () => void; positions: Position[] }) {
   const [raw, setRaw] = useState<Record<string, string>>({})
+  const [positiveAs, setPositiveAs] = useState<'reward' | 'transfer_in'>('reward')
   const save = useWrite(saveAdjustments)
   const list = props.positions.filter((p) => p.class !== 'cash' && (p.quantity.gt(0) || raw[p.asset_id]))
   const fx = props.positions.find((p) => p.usd_brl)?.usd_brl ?? null
@@ -38,9 +39,12 @@ export function ReconcileDialog(props: { open: boolean; onClose: () => void; pos
   return (
     <Modal open={props.open} onOpenChange={(o) => !o && close()} title="Conferir com a corretora">
       <p className="mt-0 mb-3 text-sm text-muted">
-        Digite a quantidade que a corretora mostra. A diferença entra como ajuste sem custo, como os rendimentos.
-        Deixe em branco o que não quer conferir.
+        Digite a quantidade que a corretora mostra. A diferença entra sem custo. Deixe em branco o que não quer conferir.
       </p>
+      <Field label="Saldo a mais na corretora é" className="mb-3" hint={positiveAs === 'reward' ? 'Rendimentos do Earn: aparecem em "Rendimentos recebidos".' : 'Correção: não conta como rendimento.'}>
+        <Segmented aria-label="Saldo a mais na corretora é" value={positiveAs} onChange={setPositiveAs}
+          options={[{ value: 'reward', label: 'Rendimento' }, { value: 'transfer_in', label: 'Correção' }]} />
+      </Field>
       <table className="tbl">
         <thead><tr><th>Ativo</th><th className="r max-sm:hidden">No app</th><th className="r">Na corretora</th><th className="r">Diferença</th></tr></thead>
         <tbody>
@@ -70,7 +74,7 @@ export function ReconcileDialog(props: { open: boolean; onClose: () => void; pos
           <div className="flex gap-2">
             <Button onClick={close}>Cancelar</Button>
             <Button variant="primary" disabled={!adjustments.length || parsed.bad.size > 0 || !fx || save.isPending}
-              onClick={() => save.mutate({ items: adjustments.map((a) => ({ asset_id: a.id, diff: a.diff })), fx_rate_to_brl: fx!.toFixed(), date: todayISO() }, { onSuccess: close })}>
+              onClick={() => save.mutate({ items: adjustments.map((a) => ({ asset_id: a.id, diff: a.diff })), fx_rate_to_brl: fx!.toFixed(), date: todayISO(), positiveAs }, { onSuccess: close })}>
               Lançar ajustes
             </Button>
           </div>

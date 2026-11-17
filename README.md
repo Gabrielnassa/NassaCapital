@@ -46,6 +46,14 @@ No iPhone, o link do e-mail abre no Safari, e o app da tela inicial não recebe 
 
 Sem senha, use "Entrar sem senha": o app manda o link por e-mail; no e-mail, toque e segure o link, copie e cole no app.
 
+## Lembrete diário no celular
+
+1. No iPhone (iOS 16.4 ou mais novo), abra a Carteira pelo ícone da tela inicial.
+2. Em Ajustes > Lembrete diário, escolha o horário e toque em "Ativar neste aparelho". Permita as notificações.
+3. Toque em "Enviar teste" para conferir.
+
+O servidor confere a cada hora e só avisa nos dias com compra do plano para fazer ou atrasada. As chaves do envio são geradas pelo próprio Supabase na primeira vez e ficam no Vault.
+
 ## Publicar no GitHub Pages
 
 O workflow `.github/workflows/pages.yml` compila e publica a cada push.

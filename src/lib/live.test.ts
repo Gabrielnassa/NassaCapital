@@ -14,7 +14,7 @@ const position = (id: string, quantity: string, avg: string, price: string | nul
     asset_id: id, ticker: id, name: id, class: cls, source: 'coingecko', quote_currency: quote,
     quantity: q, avg_price: D(avg), cost, price: price ? D(price) : null, price_origin: 'quote', price_ts: null,
     change_pct_24h: null, usd_brl: fx, value, pl: value ? value.minus(cost) : null, pl_pct: null,
-    value_brl: to(value, 'BRL'), value_usd: to(value, 'USD'), cost_brl: to(cost, 'BRL'), cost_usd: to(cost, 'USD'),
+    value_brl: to(value, 'BRL'), value_usd: to(value, 'USD'), cost_brl: to(cost, 'BRL'), cost_usd: to(cost, 'USD'), reward_qty: null,
   }
 }
 const quotes = (entries: Record<string, [string, string?]>) =>
@@ -58,6 +58,11 @@ describe('preço ao vivo por cima das posições', () => {
     expect(out[1].value_brl!.toFixed(2)).toBe('476.00') // 85 × 5,60
     expect(out[2].value_usd!.toFixed(2)).toBe('178.57') // R$ 1.000 ÷ 5,60
     expect(out[2].value_brl!.toFixed(2)).toBe('1000.00')
+  })
+  it('investido continua o do servidor (câmbio de cada compra), mesmo com câmbio ao vivo novo', () => {
+    const out = applyLive(positions, assets, quotes({ BTCUSDT: ['80000'], USDTBRL: ['5.60'] }))
+    expect(out[0].cost_brl!.toFixed(2)).toBe(positions[0].cost_brl!.toFixed(2)) // 700 × 5 = 3.500, não 700 × 5,60
+    expect(out[0].cost_brl!.toFixed(2)).toBe('3500.00')
   })
   it('sem cotação ao vivo, devolve as posições do servidor intactas', () => {
     expect(applyLive(positions, assets, new Map())).toBe(positions)

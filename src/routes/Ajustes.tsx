@@ -7,6 +7,7 @@ import {
   useAssets, useBrokers, useSettings, useWrite, type Asset, type AssetClass, type AssetInput, type Source,
 } from '../lib/data'
 import { PasswordForm } from '../features/PasswordForm'
+import { ReminderForm } from '../features/ReminderForm'
 import { useSession } from '../lib/session'
 import { supabase } from '../lib/supabase'
 import { applyTheme, type Theme } from '../lib/theme'
@@ -191,6 +192,7 @@ export function Ajustes() {
                   options={[{ value: 'system', label: 'Do aparelho' }, { value: 'light', label: 'Claro' }, { value: 'dark', label: 'Escuro' }]} />
               </Field>
               <ErrorNote error={savePrefs.error} />
+              <ReminderForm />
               <PasswordForm />
               <div className="flex items-center justify-between gap-3 border-t border-border pt-3 text-sm">
                 <span className="truncate text-muted">{session?.user.email}</span>

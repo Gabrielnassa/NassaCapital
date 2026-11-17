@@ -11,6 +11,9 @@ export interface Totals {
   dayBrl: Dec | null
   dayUsd: Dec | null
   dayPct: Dec | null
+  /** valor de hoje do que entrou como rendimento */
+  rewardsBrl: Dec
+  rewardsUsd: Dec
 }
 
 export function totals(positions: Position[]): Totals {
@@ -21,8 +24,15 @@ export function totals(positions: Position[]): Totals {
   const dayBrl = quoted.length ? sum(quoted.map((p) => gain(p.value_brl!, p.change_pct_24h!))) : null
   const dayUsd = quoted.length ? sum(quoted.map((p) => gain(p.value_usd!, p.change_pct_24h!))) : null
   const before = dayBrl ? brl.minus(dayBrl) : null
+  const rewardValue = (p: Position, ccy: Ccy) => {
+    if (!p.reward_qty?.gt(0) || !p.price) return ZERO
+    const v = p.reward_qty.times(p.price)
+    return p.quote_currency === ccy ? v : p.usd_brl?.gt(0) ? convert(v, p.quote_currency, ccy, p.usd_brl) : ZERO
+  }
   return {
     brl, usd, dayBrl, dayUsd,
+    rewardsBrl: sum(positions.map((p) => rewardValue(p, 'BRL'))),
+    rewardsUsd: sum(positions.map((p) => rewardValue(p, 'USD'))),
     usdBrl: positions.find((p) => p.usd_brl)?.usd_brl ?? null,
     dayPct: dayBrl && before?.gt(0) ? dayBrl.div(before).times(100) : null,
   }

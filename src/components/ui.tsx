@@ -297,7 +297,7 @@ export function Stats(props: { items: { label: string; value: ReactNode; sub?: R
   return (
     <dl className="m-0 grid grid-cols-2 overflow-hidden rounded-md border border-border bg-surface md:auto-cols-fr md:grid-flow-col md:grid-cols-none">
       {props.items.map((item) => (
-        <div key={item.label} className="-mb-px -ml-px border-b border-l border-border px-3 py-2">
+        <div key={item.label} className="-mb-px -ml-px border-b border-l border-border px-3 py-2 max-md:last:odd:col-span-2">
           <dt className="text-xs font-medium text-muted">{item.label}</dt>
           <dd className="num m-0 text-base leading-snug font-medium">{item.value}</dd>
           {item.sub != null && <dd className="m-0 font-mono text-xs tabular-nums text-muted">{item.sub}</dd>}

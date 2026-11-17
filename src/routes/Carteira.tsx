@@ -15,6 +15,8 @@ interface Row {
   a: Allocation | undefined
   segment: Segment
   plMain: Dec | null
+  /** L/P % na moeda principal, comparando valor de hoje com o investido pelo câmbio da compra */
+  plPctMain: Dec | null
 }
 
 type SortKey = 'ticker' | 'quantity' | 'avg' | 'price' | 'brl' | 'usd' | 'pl' | 'plPct' | 'current' | 'target' | 'deviation' | 'missing'
@@ -26,7 +28,7 @@ const COLUMNS: { key: SortKey; label: string; get: (r: Row, main: Ccy) => Dec | 
   { key: 'brl', label: 'Valor R$', get: (r) => r.p.value_brl },
   { key: 'usd', label: 'Valor US$', get: (r) => r.p.value_usd },
   { key: 'pl', label: 'L/P', get: (r) => r.plMain },
-  { key: 'plPct', label: 'L/P %', get: (r) => r.p.pl_pct },
+  { key: 'plPct', label: 'L/P %', get: (r) => r.plPctMain },
   { key: 'current', label: '% atual', get: (r) => r.a?.current_pct },
   { key: 'target', label: '% meta', get: (r) => r.a?.target_pct },
   { key: 'deviation', label: 'Desvio p.p.', get: (r) => r.a?.deviation_pct },
@@ -66,6 +68,10 @@ export function Carteira() {
       a: assetAlloc.find((a) => a.asset_id === p.asset_id),
       segment: segmentOf({ class: p.class, ticker: p.ticker, source_id: assets.data.find((x) => x.id === p.asset_id)?.source_id }),
       plMain: p.value_brl && p.cost_brl ? pick(main, p.value_brl.minus(p.cost_brl), p.value_usd!.minus(p.cost_usd!)) : null,
+      plPctMain: (() => {
+        const v = pick(main, p.value_brl, p.value_usd), c = pick(main, p.cost_brl, p.cost_usd)
+        return v && c?.gt(0) ? v.div(c).minus(1).times(100) : null
+      })(),
     }))
     .filter((r) => r.p.quantity.gt(0) || r.a?.target_pct)
 
@@ -120,8 +126,9 @@ export function Carteira() {
       <div className="mb-3 flex flex-col gap-3">
         <Stats items={[
           { label: 'Patrimônio', value: fmtMoney(pick(main, t.brl, t.usd), main), sub: fmtMoney(pick(other, t.brl, t.usd), other) },
-          { label: 'Custo', value: fmtMoney(pick(main, t.brl, t.usd)!.minus(all.pl), main), sub: 'pelo preço médio' },
+          { label: 'Investido', value: fmtMoney(pick(main, t.brl, t.usd)!.minus(all.pl), main), sub: 'pelo câmbio de cada compra' },
           { label: 'Lucro ou prejuízo', value: <Delta value={all.pl} ccy={main} />, sub: <Delta value={all.plPct} /> },
+          { label: 'Rendimentos recebidos', value: fmtMoney(pick(main, t.rewardsBrl, t.rewardsUsd), main), sub: 'Binance Earn e outros, a preço de hoje' },
           { label: 'Hoje', value: t.dayPct ? <Delta value={pick(main, t.dayBrl, t.dayUsd)} ccy={main} /> : '—', sub: t.dayPct ? <Delta value={t.dayPct} /> : 'sem variação de 24h' },
         ]} />
         <SegmentBar aria-label="Composição da carteira"
@@ -172,7 +179,7 @@ export function Carteira() {
                         <td className="r num">{fmtAmount(r.p.value_brl)}</td>
                         <td className="r num">{fmtAmount(r.p.value_usd)}</td>
                         <td className="r"><Delta value={r.p.quantity.gt(0) ? r.plMain : null} ccy={main} /></td>
-                        <td className="r"><Delta value={r.p.pl_pct} /></td>
+                        <td className="r"><Delta value={r.plPctMain} /></td>
                         <td className="r num">{fmtPct(r.a?.current_pct)}</td>
                         <td className="r">{target(r)}</td>
                         <td className="r num text-muted">{r.a?.deviation_pct ? fmtPctSigned(r.a.deviation_pct).replace('%', '') : '—'}</td>
@@ -211,7 +218,7 @@ export function Carteira() {
                     </div>
                     <div className="flex items-baseline justify-between gap-3 text-xs text-muted">
                       <span className="num">{fmtQty(r.p.quantity)} · PM {r.p.quantity.gt(0) ? fmtPrice(r.p.avg_price, r.p.quote_currency) : '—'}</span>
-                      <Delta value={r.p.pl_pct} />
+                      <Delta value={r.plPctMain} />
                     </div>
                     <div className="mt-0.5 flex items-baseline justify-between gap-3 text-xs text-muted">
                       <span className="num">

@@ -79,7 +79,7 @@ function Form(props: { prefill: TradePrefill; assets: Asset[]; positions: Positi
   }
   const isNew = !prefill.tx
   const ccy = f.currency as Ccy
-  const incoming = f.type === 'buy' || f.type === 'transfer_in'
+  const incoming = f.type === 'buy' || f.type === 'transfer_in' || f.type === 'reward'
 
   const calc = useMemo(() => {
     const q = parseNumberBR(f.quantity), t = parseNumberBR(f.total), fee = parseNumberBR(f.fee), fx = parseNumberBR(f.fx_rate_to_brl)
@@ -150,7 +150,7 @@ function Form(props: { prefill: TradePrefill; assets: Asset[]; positions: Positi
       <Field label="Tipo">
         <Select aria-label="Tipo" value={f.type} onChange={(v) => set({ type: v })} options={(Object.keys(TX_LABEL) as TxType[]).map((t) => ({ value: t, label: TX_LABEL[t] }))} />
       </Field>
-      <Field label={`${incoming ? 'Total pago' : 'Total recebido'} (${ccy === 'USD' ? 'US$' : 'R$'})`} error={errors.total}>
+      <Field label={`${f.type === 'reward' ? 'Valor pago (0 para rendimento)' : incoming ? 'Total pago' : 'Total recebido'} (${ccy === 'USD' ? 'US$' : 'R$'})`} error={errors.total}>
         <NumberInput value={f.total} onChange={(e) => set({ total: e.target.value })} placeholder="0,00" />
       </Field>
       <Field label={incoming ? 'Quantidade recebida' : 'Quantidade vendida'} error={errors.quantity}

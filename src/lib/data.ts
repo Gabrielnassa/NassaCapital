@@ -13,7 +13,7 @@ const decN = dec.nullable()
 const ccy = z.enum(['BRL', 'USD'])
 const assetClass = z.enum(['crypto', 'stock', 'fii', 'etf', 'stable', 'cash'])
 const source = z.enum(['coingecko', 'brapi', 'manual'])
-const txType = z.enum(['buy', 'sell', 'transfer_in', 'transfer_out'])
+const txType = z.enum(['buy', 'sell', 'transfer_in', 'transfer_out', 'reward'])
 const frequency = z.enum(['daily', 'weekly', 'once'])
 const planStatus = z.enum(['active', 'paused', 'done'])
 const execStatus = z.enum(['pending', 'done', 'skipped'])
@@ -28,7 +28,7 @@ export const CLASS_LABEL: Record<AssetClass, string> = {
   crypto: 'Cripto', stock: 'Ações', fii: 'FIIs', etf: 'ETFs', stable: 'Stablecoins', cash: 'Caixa',
 }
 export const CLASS_ORDER: AssetClass[] = ['crypto', 'stock', 'fii', 'etf', 'stable', 'cash']
-export const TX_LABEL: Record<TxType, string> = { buy: 'Compra', sell: 'Venda', transfer_in: 'Entrada', transfer_out: 'Saída' }
+export const TX_LABEL: Record<TxType, string> = { buy: 'Compra', sell: 'Venda', transfer_in: 'Entrada', transfer_out: 'Saída', reward: 'Rendimento' }
 export const FREQ_LABEL = { daily: 'Diário', weekly: 'Semanal', once: 'Compra única' } as const
 export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = { active: 'Ativo', paused: 'Pausado', done: 'Concluído' }
 
@@ -51,6 +51,8 @@ const positionRow = z.object({
   price: decN, price_origin: z.enum(['fixed', 'quote', 'last_tx', 'none', 'live']), price_ts: z.string().nullable(),
   change_pct_24h: decN, usd_brl: decN,
   value: decN, pl: decN, pl_pct: decN, value_brl: decN, value_usd: decN, cost_brl: decN, cost_usd: decN,
+  /** quantidade recebida como rendimento (Earn etc.), somada desde o início */
+  reward_qty: decN.default(null),
 })
 export type Position = z.infer<typeof positionRow>
 
@@ -87,9 +89,9 @@ const planRow = z.object({
 })
 export type Plan = z.infer<typeof planRow>
 
-const settingsRow = z.object({ main_currency: ccy, theme: z.enum(['system', 'light', 'dark']) })
+const settingsRow = z.object({ main_currency: ccy, theme: z.enum(['system', 'light', 'dark']), reminder_hour: z.number().int().nullable().default(null) })
 export type Settings = z.infer<typeof settingsRow>
-export const DEFAULT_SETTINGS: Settings = { main_currency: 'BRL', theme: 'system' }
+export const DEFAULT_SETTINGS: Settings = { main_currency: 'BRL', theme: 'system', reminder_hour: null }
 
 const snapshotRow = z.object({ date: z.string(), class: assetClass, value_brl: dec, value_usd: dec, cost_brl: dec, cost_usd: dec })
 export type Snapshot = z.infer<typeof snapshotRow>
@@ -211,16 +213,20 @@ export async function deleteTransaction(tx: Pick<Transaction, 'id'>) {
 }
 
 /**
- * Ajustes de conferência: entrada ou saída sem custo, para o saldo do app bater com a corretora
- * (rendimentos, poeira de conversão). Não mexem no custo; entradas sem custo baixam o preço médio.
+ * Ajustes de conferência: entrada ou saída sem custo, para o saldo do app bater com a corretora.
+ * Diferença positiva entra como rendimento (padrão) ou como correção. Não mexem no investido;
+ * entradas sem custo baixam o preço médio.
  */
-export async function saveAdjustments(args: { items: { asset_id: string; diff: Dec }[]; fx_rate_to_brl: string; date: string }) {
+export async function saveAdjustments(args: { items: { asset_id: string; diff: Dec }[]; fx_rate_to_brl: string; date: string; positiveAs: 'reward' | 'transfer_in' }) {
   if (!args.items.length) return
-  check(await supabase.from('transactions').insert(args.items.map((i) => ({
-    asset_id: i.asset_id, type: i.diff.gt(0) ? 'transfer_in' : 'transfer_out', date: args.date,
-    quantity: i.diff.abs().toFixed(), unit_price: '0', fee: '0', currency: 'USD', fx_rate_to_brl: args.fx_rate_to_brl,
-    notes: 'Ajuste de saldo conforme a corretora',
-  }))))
+  check(await supabase.from('transactions').insert(args.items.map((i) => {
+    const reward = i.diff.gt(0) && args.positiveAs === 'reward'
+    return {
+      asset_id: i.asset_id, type: reward ? 'reward' : i.diff.gt(0) ? 'transfer_in' : 'transfer_out', date: args.date,
+      quantity: i.diff.abs().toFixed(), unit_price: '0', fee: '0', currency: 'USD', fx_rate_to_brl: args.fx_rate_to_brl,
+      notes: reward ? 'Rendimento' : 'Ajuste de saldo conforme a corretora',
+    }
+  })))
 }
 
 export async function setTargets(args: { kind: 'asset' | 'class'; items: { asset_id?: string; class?: AssetClass; percent: string }[] }) {
@@ -308,6 +314,32 @@ export async function saveSettings(patch: Partial<Settings>) {
   const { data } = await supabase.auth.getUser()
   check(await supabase.from('settings').upsert({ user_id: data.user?.id, ...patch }))
 }
+/** Chave pública do lembrete (VAPID). O servidor gera o par na primeira vez e guarda a privada no Vault. */
+export const usePushPublicKey = (enabled: boolean) =>
+  useQuery({
+    queryKey: ['push-public-key'],
+    enabled,
+    staleTime: Infinity,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('push', { body: { action: 'public-key' } })
+      if (error || !data?.publicKey) throw new Error('Não foi possível preparar as notificações agora.')
+      return data.publicKey as string
+    },
+  })
+
+export async function savePushSubscription(sub: { endpoint: string; p256dh: string; auth: string }) {
+  check(await supabase.from('push_subscriptions').upsert({ ...sub, user_agent: navigator.userAgent }, { onConflict: 'endpoint' }))
+}
+export async function deletePushSubscription(endpoint: string) {
+  check(await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint))
+}
+/** Manda uma notificação de teste para os aparelhos inscritos. */
+export async function sendTestPush(): Promise<{ sent: number; devices: number; errors: string[] }> {
+  const { data, error } = await supabase.functions.invoke('push', { body: { action: 'test' } })
+  if (error) throw new Error('Não foi possível enviar o teste agora.')
+  return data
+}
+
 export async function seedInitialData() {
   check(await supabase.rpc('seed_initial_data'))
 }

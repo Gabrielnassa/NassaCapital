@@ -59,8 +59,9 @@ export function applyLive(positions: Position[], assets: Asset[], quotes: Map<st
       pl_pct: value && p.cost.gt(0) ? value.div(p.cost).minus(1).times(100) : null,
       value_brl: to(value, 'BRL'),
       value_usd: to(value, 'USD'),
-      cost_brl: to(p.cost, 'BRL'),
-      cost_usd: to(p.cost, 'USD'),
+      // Investido é histórico (câmbio de cada compra): vem do servidor e não muda com o preço.
+      cost_brl: p.cost_brl,
+      cost_usd: p.cost_usd,
     }
   })
 }

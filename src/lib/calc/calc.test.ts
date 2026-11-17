@@ -66,6 +66,31 @@ describe('preço médio (regra 1 e 2)', () => {
   })
 })
 
+describe('investido pelo câmbio de cada lançamento', () => {
+  it('R$ 8.000 trocados a 5,63 continuam R$ 8.000 investidos, com qualquer dólar de hoje', () => {
+    const p = computePosition([tx('buy', '1421', String(8000 / 1421), '0', 'BRL', '5.63')], 'USD')
+    expect(p.costBrl.toFixed(2)).toBe('8000.00')
+    expect(p.costUsd.toFixed(2)).toBe((8000 / 5.63).toFixed(2))
+    expect(p.cost.toFixed(2)).toBe(p.costUsd.toFixed(2)) // cotado em dólar
+  })
+  it('compras em dias diferentes somam cada uma pelo seu câmbio', () => {
+    const p = computePosition([tx('buy', '10', '1', '0', 'USD', '5'), tx('buy', '10', '1', '0', 'USD', '6')], 'USD')
+    expect(p.costBrl.toFixed(2)).toBe('110.00') // 10 × 5 + 10 × 6
+    expect(p.costUsd.toFixed(2)).toBe('20.00')
+  })
+  it('venda reduz o investido nas duas moedas na mesma proporção', () => {
+    const p = computePosition([tx('buy', '10', '1', '0', 'USD', '5'), tx('buy', '10', '1', '0', 'USD', '6'), tx('sell', '5', '2', '0', 'USD', '7')], 'USD')
+    expect(p.costBrl.toFixed(2)).toBe('82.50') // 110 × 15/20
+    expect(p.costUsd.toFixed(2)).toBe('15.00')
+  })
+  it('rendimento entra sem custo', () => {
+    const p = computePosition([tx('buy', '10', '1', '0', 'USD', '5'), tx('reward', '1', '0', '0', 'USD', '6')], 'USD')
+    expect(p.quantity.toFixed()).toBe('11')
+    expect(p.costBrl.toFixed(2)).toBe('50.00')
+    expect(p.avgPrice.toFixed(4)).toBe((10 / 11).toFixed(4))
+  })
+})
+
 describe('simulador de aporte (regra 3)', () => {
   it('a soma sugerida é exatamente o aporte', () => {
     for (const x of ['1000', '333.33', '0.07', '1584.16', '99999.99']) {
